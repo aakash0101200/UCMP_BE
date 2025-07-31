@@ -3,6 +3,7 @@ package com.ucmp.ucmp_backend.controller;
 import com.ucmp.ucmp_backend.model.*;
 import com.ucmp.ucmp_backend.model.RegisterRequest;
 
+import com.ucmp.ucmp_backend.repository.StudentRepository;
 import com.ucmp.ucmp_backend.repository.UserRepository;
 import com.ucmp.ucmp_backend.config.JwtUtil;
 import jakarta.validation.Valid;
@@ -18,14 +19,18 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private final UserService userService;
+
+    @Autowired
+    public AuthController(UserService userService) {
+        this.userService = userService;
+    }
+
     @GetMapping
     public String hello(){
         return "hello, world!!";
     }
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtUtil jwtUtil;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -57,51 +62,9 @@ public class AuthController {
     }
 
 
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-
-        Optional<User> existing = userRepository.findByCollegeId(request.getCollegeId());
-        if (existing.isPresent()) {
-            return ResponseEntity.badRequest().body("User already exists with this College ID");
-        }
-
-        if (request.getPassword().length() < 6) {
-            return ResponseEntity.badRequest().body("Password too short");
-        }
-
-
-
-
-        String collegeId = request.getCollegeId().trim();
-        String name = request.getName().trim();
-        String email = request.getEmail().trim();
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
-        String role = request.getRole().trim().toUpperCase();
-
-        boolean validRole = false;
-        for (User.Role r : User.Role.values()) {
-            if (r.name().equalsIgnoreCase(request.getRole())) {
-                validRole = true;
-                break;
-            }
-        }
-        if (!validRole) {
-            return ResponseEntity.badRequest().body("Invalid role selected");
-        }
-
-
-
-        User user = new User(
-                collegeId,
-                hashedPassword,
-                email,
-                name,
-                User.Role.valueOf(role)
-        );
-        userRepository.save(user);
-
-        return ResponseEntity.ok("Registration successful");
+        return userService.register(request);
     }
 
-}
+    }
