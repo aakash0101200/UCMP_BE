@@ -4,9 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "student")
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "students")
+@NoArgsConstructor @AllArgsConstructor
 @Data
 public class Student {
 
