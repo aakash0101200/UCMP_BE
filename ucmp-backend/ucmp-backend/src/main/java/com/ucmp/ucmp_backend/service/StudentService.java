@@ -1,6 +1,6 @@
 package com.ucmp.ucmp_backend.service;
 import com.ucmp.ucmp_backend.model.Student;
-import com.ucmp.ucmp_backend.repository.ProfileRepository;
+//import com.ucmp.ucmp_backend.repository.ProfileRepository;
 import com.ucmp.ucmp_backend.repository.StudentRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,13 +18,13 @@ import java.util.List;
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final ProfileRepository profileRepository;
+//    private final ProfileRepository profileRepository;
 
     @Autowired
-    public StudentService(StudentRepository studentRepository, ProfileRepository profileRepository) {
+    public StudentService(StudentRepository studentRepository) {
 
         this.studentRepository = studentRepository;
-        this.profileRepository = profileRepository;
+//        this.profileRepository = profileRepository;
     }
 
     public List<Student> getAll(){

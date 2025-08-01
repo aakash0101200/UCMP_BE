@@ -5,17 +5,18 @@ import lombok.*;
 
 @Entity
 @Table(name = "students")
-@NoArgsConstructor @AllArgsConstructor
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class Student {
 
     @Id
     private String collegeId;
 
     @OneToOne
-    @JoinColumn(name = "college_id")
     @MapsId
+    @JoinColumn(name = "college_id")
     private Profile profile;
-
-
 }
+

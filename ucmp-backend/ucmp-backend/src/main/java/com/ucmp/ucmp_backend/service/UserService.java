@@ -77,7 +77,7 @@ public class UserService {
 
 
 
-    @Transactional
+
     public ResponseEntity<?> register(RegisterRequest request) {
 
         Optional<User> existing = userRepository.findByCollegeId(request.getCollegeId());
@@ -104,23 +104,44 @@ public class UserService {
         User user = new User(
                 collegeId,
                 hashedPassword,
-                email,
                 name,
+                email,
                 userRole
+
         );
-        userRepository.save(user);
+        try{
+            userRepository.save(user);
+
+        }catch (Exception e) {
+            System.out.println(e);
+
+            throw new RuntimeException("Registration failed: " + e.getMessage(), e);
+        }
+
 
         Profile profile = new Profile();
         profile.setCollegeId(collegeId);
         profile.setEmail(email);
         profile.setName(name);
         profileRepository.save(profile);
+        profileRepository.flush(); // ✅ Ensures FK target exists in DB
+
 
         if(userRole.equals(User.Role.STUDENT)){
             Student student = new Student();
             student.setCollegeId(collegeId);
             student.setProfile(profile);
-            studentRepository.save(student);
+
+            System.out.println("Saving student:");
+            System.out.println("College ID: " + student.getCollegeId());
+            System.out.println("Profile: " + student.getProfile());
+            System.out.println("Profile College ID: " + student.getProfile().getCollegeId());
+
+            try {
+                studentRepository.save(student);
+            } catch (Exception e) {
+                e.printStackTrace(); // This prints the stack trace to the console
+            }
         }
 
 
