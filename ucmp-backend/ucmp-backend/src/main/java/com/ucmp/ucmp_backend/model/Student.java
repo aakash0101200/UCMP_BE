@@ -12,9 +12,10 @@ import lombok.*;
 public class Student {
 
     @Id
+    @Column(name = "college_id")
     private String collegeId;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "college_id")
     private Profile profile;

@@ -13,12 +13,16 @@ import lombok.*;
 public class Profile {
 
     @Id
+    @Column(name = "college_id")
     private String collegeId;
 
     private String name;
 
     @Email
     private String email;
+
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Student student;
 
 
 }
