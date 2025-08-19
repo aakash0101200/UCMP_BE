@@ -28,33 +28,33 @@ public class StudentService {
         this.profileRepository = profileRepository;
     }
 
-    public StudentProfileDTO createStudentProfile(StudentProfileDTO studentProfileDTO) {
+    public StudentProfileDTO createStudentProfile(StudentProfileDTO dto) {
         Profile profile = new Profile();
-        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,null,profile);
-        profile.setProfileId(studentProfileDTO.getProfileId());
-        profileRepository.save(profile);
+        profile.setName(dto.getName());
+        profile.setEmail(dto.getEmail());
+        Profile savedProfile = profileRepository.save(profile);
+
 
         Student student=new Student();
-        student.setCollegeId(studentProfileDTO.getCollegeId());
-        student.setProfile(profile);
-        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,student,profile);
+        student.setCollegeId(dto.getCollegeId());
+        student.setProfile(savedProfile);
+//        StudentProfileMapper.updateEntitiesFromDto(dto,student,profile);
         Student savedStudent = studentRepository.save(student);
 
-        return StudentProfileMapper.toDto(student);
+        return StudentProfileMapper.toDto(savedStudent);
     }
 
-    public Optional<StudentProfileDTO> updateStudentProfile(String collegeId,StudentProfileDTO studentProfileDTO) {
-        Optional<Student> studentOpt =studentRepository.findById(collegeId);
+    public Optional<StudentProfileDTO> updateStudentProfile(String collegeId,StudentProfileDTO dto) {
 
-        if(studentOpt.isEmpty()){ return Optional.empty(); }
-
-        Student student = studentOpt.get();
-        Profile profile = student.getProfile();
-        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,student,profile);
-        profileRepository.save(profile);
-        studentRepository.save(student);
-
-        return Optional.of(StudentProfileMapper.toDto(student));
+        return studentRepository.findByCollegeId(collegeId).map(
+                student->{
+                    Profile profile = student.getProfile();
+                    StudentProfileMapper.updateEntitiesFromDto(dto,student,profile);
+                    profileRepository.save(profile);
+                    studentRepository.save(student);
+                    return StudentProfileMapper.toDto(student);
+                }
+        );
     }
 
     public Optional<StudentProfileDTO> getStudentProfileByCollegeId(String id) {
@@ -64,8 +64,13 @@ public class StudentService {
 
 
 
-    public void deleteStudentById(String id) {
-        studentRepository.deleteById(id);
+    public void deleteStudentByCollegeId(String collegeId, boolean alsoDeleteProfile) {
+        studentRepository.findByCollegeId(collegeId).ifPresent(student -> {
+            Long profileId = student.getProfile().getProfileId();
+            studentRepository.deleteById(collegeId);
+            if (alsoDeleteProfile) {
+                profileRepository.deleteById(profileId);
+            }
+        });
     }
-
 }

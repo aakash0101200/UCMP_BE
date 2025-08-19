@@ -21,9 +21,9 @@ public class Student {
     @Column(name = "college_id")
     private String collegeId;
 
-    @OneToOne(mappedBy = "student",cascade = CascadeType.ALL, orphanRemoval = true)
-    @MapsId
-    @JoinColumn()
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "profile_id", referencedColumnName = "profile_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_student_profile"))
     private Profile profile;
 }
 

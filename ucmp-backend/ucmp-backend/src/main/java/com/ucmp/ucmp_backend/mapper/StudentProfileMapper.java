@@ -12,26 +12,33 @@ public class StudentProfileMapper {
         }
 
         Profile profile = student.getProfile();
-        StudentProfileDTO studentProfileDTO = new StudentProfileDTO();
-        studentProfileDTO.setCollegeId(student.getCollegeId());
+        StudentProfileDTO dto = new StudentProfileDTO();
+        dto.setCollegeId(student.getCollegeId());
 
         if(profile != null){
-            studentProfileDTO.setProfileId(profile.getProfileId());
-            studentProfileDTO.setName(profile.getName());
-            studentProfileDTO.setEmail(profile.getEmail());
+            dto.setProfileId(profile.getProfileId());
+            dto.setName(profile.getName());
+            dto.setEmail(profile.getEmail());
 
         }
 
-        return studentProfileDTO;
+        return dto;
     }
 
-    public static void updateEntitiesFromDto(StudentProfileDTO studentProfileDTO, Student student,Profile profile){
+    public static void updateEntitiesFromDto(StudentProfileDTO dto, Student student,Profile profile){
 
-        student.setCollegeId(studentProfileDTO.getCollegeId());
+//        student.setCollegeId(dto.getCollegeId());
 
-        profile.setProfileId(studentProfileDTO.getProfileId());
-        profile.setName(studentProfileDTO.getName());
-        profile.setEmail(studentProfileDTO.getEmail());
+//        profile.setProfileId(dto.getProfileId());
+        if(dto.getName()!=null){
+            profile.setName(dto.getName());
+
+        }
+        if(dto.getEmail()!=null){
+            profile.setEmail(dto.getEmail());
+
+
+        }
     }
 
 }

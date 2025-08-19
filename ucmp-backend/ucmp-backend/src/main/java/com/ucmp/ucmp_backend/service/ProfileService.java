@@ -27,6 +27,7 @@ public class ProfileService {
     }
 
     public List<Profile> getAllProfiles() {
+
      return profileRepository.findAll();
     }
 

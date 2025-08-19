@@ -23,8 +23,7 @@ public class StudentController {
     // POST: create new student+profile
     @PostMapping
     public ResponseEntity<StudentProfileDTO> createProfile(@RequestBody StudentProfileDTO dto) {
-        StudentProfileDTO created = studentService.createStudentProfile(dto);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(studentService.createStudentProfile(dto));
     }
 
     // PUT: update existing student+profile
