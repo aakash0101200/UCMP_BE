@@ -22,15 +22,19 @@ public class ProfileService {
         this.profileRepository = profileRepository;
     }
 
-    public List<Profile> findAll(){
-      return  profileRepository.findAll();
+    public Profile saveProfile(Profile profile) {
+        return profileRepository.save(profile);
     }
 
     public List<Profile> getAllProfiles() {
      return profileRepository.findAll();
     }
 
-    public Profile createProfile(Profile profile) {
-     return profileRepository.save(profile);
+    public Optional<Profile> getProfileById(Long profileId) {
+        return profileRepository.findById(profileId);
+    }
+
+    public void deleteProfileById(Long id) {
+        profileRepository.deleteById(id);
     }
 }

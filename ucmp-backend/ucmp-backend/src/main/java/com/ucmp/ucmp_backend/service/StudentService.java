@@ -1,49 +1,71 @@
 package com.ucmp.ucmp_backend.service;
+import com.ucmp.ucmp_backend.dto.StudentProfileDTO;
+import com.ucmp.ucmp_backend.mapper.StudentProfileMapper;
+import com.ucmp.ucmp_backend.model.Profile;
 import com.ucmp.ucmp_backend.model.Student;
-//import com.ucmp.ucmp_backend.repository.ProfileRepository;
+import com.ucmp.ucmp_backend.repository.ProfileRepository;
 import com.ucmp.ucmp_backend.repository.StudentRepository;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 
 public class StudentService {
 
     private final StudentRepository studentRepository;
-//    private final ProfileRepository profileRepository;
+    private final ProfileRepository profileRepository;
 
     @Autowired
-    public StudentService(StudentRepository studentRepository) {
+    public StudentService(StudentRepository studentRepository, ProfileRepository profileRepository) {
 
         this.studentRepository = studentRepository;
-//        this.profileRepository = profileRepository;
+        this.profileRepository = profileRepository;
     }
 
-    public List<Student> getAll(){
-        return studentRepository.findAll();
+    public StudentProfileDTO createStudentProfile(StudentProfileDTO studentProfileDTO) {
+        Profile profile = new Profile();
+        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,null,profile);
+        profile.setProfileId(studentProfileDTO.getProfileId());
+        profileRepository.save(profile);
+
+        Student student=new Student();
+        student.setCollegeId(studentProfileDTO.getCollegeId());
+        student.setProfile(profile);
+        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,student,profile);
+        Student savedStudent = studentRepository.save(student);
+
+        return StudentProfileMapper.toDto(student);
     }
 
-    //Delete student
+    public Optional<StudentProfileDTO> updateStudentProfile(String collegeId,StudentProfileDTO studentProfileDTO) {
+        Optional<Student> studentOpt =studentRepository.findById(collegeId);
 
-    public void deleteById(String id) {
-        studentRepository.findByCollegeId(id)
-                .orElseThrow(() -> new RuntimeException("Student not found: " + id));
-                studentRepository.deleteById(id);
+        if(studentOpt.isEmpty()){ return Optional.empty(); }
+
+        Student student = studentOpt.get();
+        Profile profile = student.getProfile();
+        StudentProfileMapper.updateEntitiesFromDto(studentProfileDTO,student,profile);
+        profileRepository.save(profile);
+        studentRepository.save(student);
+
+        return Optional.of(StudentProfileMapper.toDto(student));
     }
 
-    public List<Student> getAllStudents() {
-        return studentRepository.findAll();
+    public Optional<StudentProfileDTO> getStudentProfileByCollegeId(String id) {
+        return studentRepository.findById(id).map(StudentProfileMapper::toDto);
     }
 
-    public Student createStudent(Student student) {
-        return studentRepository.save(student);
+
+
+
+    public void deleteStudentById(String id) {
+        studentRepository.deleteById(id);
     }
+
 }

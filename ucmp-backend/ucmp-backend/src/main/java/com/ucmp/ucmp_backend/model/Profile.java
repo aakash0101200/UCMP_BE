@@ -1,5 +1,8 @@
 package com.ucmp.ucmp_backend.model;
 
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
@@ -12,17 +15,21 @@ import lombok.*;
 @Setter
 public class Profile {
 
-    @Id
-    @Column(name = "college_id")
-    private String collegeId;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long profileId;
+
+
+//    @Column(name = "college_id")
+//    private String collegeId;
+
+    @Column(name="name")
     private String name;
 
     @Email
     private String email;
 
-    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Student student;
 
 
 }

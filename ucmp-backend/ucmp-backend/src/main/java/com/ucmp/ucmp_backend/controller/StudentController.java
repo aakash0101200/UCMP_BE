@@ -1,37 +1,41 @@
 package com.ucmp.ucmp_backend.controller;
 
-import com.ucmp.ucmp_backend.model.Student;
+import com.ucmp.ucmp_backend.dto.StudentProfileDTO;
 import com.ucmp.ucmp_backend.service.StudentService;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
-
-    private final StudentService studentService;
-
     @Autowired
-    public StudentController(StudentService studentService) {
-        this.studentService = studentService;
+    private StudentService studentService;
+
+    // GET: fetch profile by collegeId (useful for profile cards)
+    @GetMapping("/{collegeId}/profile")
+    public ResponseEntity<StudentProfileDTO> getProfile(@PathVariable String collegeId) {
+        return studentService.getStudentProfileByCollegeId(collegeId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/")
-    public ResponseEntity<List<Student>> getAllStudents() {
-        List<Student> students = studentService.getAllStudents();
-        return ResponseEntity.ok(students);
+    // POST: create new student+profile
+    @PostMapping
+    public ResponseEntity<StudentProfileDTO> createProfile(@RequestBody StudentProfileDTO dto) {
+        StudentProfileDTO created = studentService.createStudentProfile(dto);
+        return ResponseEntity.ok(created);
     }
 
-
-    @PostMapping("/")
-    public ResponseEntity<Student> createStudent(@RequestBody Student student) {
-        Student savedStudent = studentService.createStudent(student);
-        return ResponseEntity.ok(savedStudent);
+    // PUT: update existing student+profile
+    @PutMapping("/{collegeId}/profile")
+    public ResponseEntity<StudentProfileDTO> updateProfile(
+            @PathVariable String collegeId,
+            @RequestBody StudentProfileDTO dto) {
+        return studentService.updateStudentProfile(collegeId, dto)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 
 
 }

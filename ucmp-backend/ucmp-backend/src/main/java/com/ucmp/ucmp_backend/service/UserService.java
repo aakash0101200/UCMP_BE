@@ -82,7 +82,7 @@ public class UserService {
 
 
 
-    @Transactional
+//    @Transactional
     public ResponseEntity<String> register(RegisterRequest request) {
 
         // 1. Check if user already exists
@@ -126,21 +126,25 @@ public class UserService {
 
 
         // 5. Create Profile entity
-        Profile profile = new Profile();
-        profile.setCollegeId(user.getCollegeId());
-        profile.setName(user.getName());
-        profile.setEmail(user.getEmail());
-
-
-        // 6. Persist Profile and, if student, Student with cascade
-        if (userRole == User.Role.STUDENT) {
-            Student student = new Student();
-            student.setCollegeId(user.getCollegeId());
-            student.setProfile(profile);
-            studentRepository.save(student); // Cascades profile save
-        } else {
-            profileRepository.save(profile);
-        }
+//        Profile profile = new Profile();
+//        profile.setCollegeId(user.getCollegeId());
+//        profile.setName(user.getName());
+//        profile.setEmail(user.getEmail());
+//        profileRepository.save(profile);
+//
+//
+//        // 6. Persist Profile and, if student, Student with cascade
+//        if (userRole == User.Role.STUDENT) {
+//            Student student = new Student();
+//            student.setCollegeId(user.getCollegeId());
+//            student.setProfile(profile);
+//            profile.setStudent(student);
+//            try {
+//                studentRepository.save(student); // Cascades profile save
+//            }catch(Exception ex) {
+//                return ResponseEntity.badRequest().body(ex.getMessage());
+//            }
+//        }
         return ResponseEntity.ok("Registration successful");
     }
 

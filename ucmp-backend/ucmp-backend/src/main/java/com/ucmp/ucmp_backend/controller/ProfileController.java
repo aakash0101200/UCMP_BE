@@ -32,9 +32,36 @@ public class ProfileController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<Profile> addProfile(@RequestBody Profile profile) {
-        Profile savedProfile=profileService.createProfile(profile);
+    public ResponseEntity<Profile> saveProfile(@RequestBody Profile profile) {
+        Profile savedProfile=profileService.saveProfile(profile);
         return ResponseEntity.ok(savedProfile);
+    }
+
+    // Get Profile by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Profile> getProfileById(@PathVariable Long id) {
+        Optional<Profile> profileOpt = profileService.getProfileById(id);
+        return profileOpt.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Update Profile by ID
+    @PutMapping("/{id}")
+    public ResponseEntity<Profile> updateProfile(@PathVariable Long id, @RequestBody Profile profile) {
+        Optional<Profile> existingProfile = profileService.getProfileById(id);
+        if (!existingProfile.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        profile.setProfileId(id);  // ensure the ID stays the same
+        Profile updatedProfile = profileService.saveProfile(profile);
+        return ResponseEntity.ok(updatedProfile);
+    }
+
+    // Delete Profile by ID
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProfile(@PathVariable Long id) {
+        profileService.deleteProfileById(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
