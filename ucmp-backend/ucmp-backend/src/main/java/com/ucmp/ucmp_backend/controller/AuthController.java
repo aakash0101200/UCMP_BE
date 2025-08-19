@@ -42,6 +42,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        System.out.println("Inside register controller");
         return userService.register(request);
     }
 
