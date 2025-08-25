@@ -21,7 +21,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
@@ -29,7 +28,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         final String authorizationHeader = request.getHeader("Authorization");
         final String path = request.getRequestURI();
 
-        // ✅ Allow unauthenticated paths to pass through
+        // Allow unauthenticated paths to pass through
         if (path.startsWith("/api/auth")) {
             chain.doFilter(request, response);
             return;

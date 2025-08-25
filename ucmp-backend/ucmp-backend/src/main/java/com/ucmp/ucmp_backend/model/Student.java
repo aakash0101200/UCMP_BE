@@ -18,12 +18,39 @@ public class Student {
 
 
     @Id
-    @Column(name = "college_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
     private String collegeId;
 
-    @OneToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "profile_id", referencedColumnName = "profile_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_student_profile"))
-    private Profile profile;
+    private String rollNumber;
+    private String department;
+    private String year;
+
+
+//    @OneToOne(mappedBy = "student",cascade = CascadeType.ALL, orphanRemoval = true)
+//    @MapsId
+//    @JoinColumn()
+//    private Profile profile;
+    //link to user
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name="batch_id")
+    private Batch batch;
+
+    @ManyToOne
+    @JoinColumn(name = "section_id")
+    private Section section;
+
+
+
+//    @ManyToOne
+//    @JoinColumn(name = "profile_id", nullable = false)
+//    private Profile profile;
+    //profile will be accessed through user .getprofile
 }
 

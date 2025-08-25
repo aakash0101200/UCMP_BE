@@ -15,4 +15,6 @@ public class StudentProfileDTO {
     private Long profileId;
     private String name;
     private String email;
+
+    private Long section;
 }

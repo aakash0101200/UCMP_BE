@@ -30,11 +30,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login",
+                        .requestMatchers("/api/auth/**",
                                 "/api/auth/register").permitAll() // ✅ Register/Login public
                         .requestMatchers("/api/announcements/**").permitAll()
                         .requestMatchers("/api/students/**").permitAll()
-                        .requestMatchers("/api/profiles/**").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/profile/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtRequestFilter(), UsernamePasswordAuthenticationFilter.class)
