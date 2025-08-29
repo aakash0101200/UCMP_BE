@@ -33,7 +33,10 @@ public class Faculty {
     private  User user;
 
     @ManyToMany(mappedBy = "faculties") //if faculty teaches multiple batches
-    private Set<Batch> batches = new HashSet<>();
+    private Set<Section> sections = new HashSet<>();
+
+//    @OneToMany(mappedBy = "faculty", cascade =  CascadeType.ALL, orphanRemoval = true)
+//    private Set<Schedule> schedules = new HashSet<>();
 
 //    // One faculty member can advise many students
 //    @OneToMany(mappedBy = "facultyAdvisor", fetch = FetchType.LAZY)
