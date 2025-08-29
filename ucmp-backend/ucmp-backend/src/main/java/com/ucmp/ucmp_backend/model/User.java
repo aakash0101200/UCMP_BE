@@ -1,72 +1,84 @@
 package com.ucmp.ucmp_backend.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "email"),
+        @UniqueConstraint(columnNames = "collegeId")
+})
+@Getter
+@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+//@Inheritance(strategy = InheritanceType.JOINED) // This is key for the inheritance
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
-    private String collegeId;
 
+    @Column(unique = true, updatable = false)
+    private String collegeId; // e.g., "STU123", "FAC456"
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
-    private String email;   // NEW
+    @Email
+    @Column(unique = true , nullable = false)
+    private String email;
+
+    @Column
+    private String department;
+
+    @Column
+    private String designation;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
+//
+//    @Column(nullable = false)
+//    private boolean isVerified = false; // For email/account verification
 
-    // No-arg constructor
-    public User() {}
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
-    // All-args constructor
-    public User(String collegeId, String password, String name, String email, Role role) {
-        this.collegeId = collegeId;
-        this.password = password;
-        this.role = role;
-        this.name = name;
-        this.email = email;
-    }
-
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public String getCollegeId() {
-        return collegeId;
-    }
-    public void setCollegeId(String collegeId) {
-        this.collegeId = collegeId;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public  String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
 
-    public enum Role {
-        STUDENT, FACULTY, ADMIN
-    }
+
+//    // Constructor for registration
+//    public User(String collegeId, String password, String name, String email, Role role) {
+//        this.collegeId = collegeId;
+//        this.password = password;
+//        this.name = name;
+//        this.email = email;
+//        this.role = role;
+//    }
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Profile profile;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Student student;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Faculty faculty;
+
+
+
 }
