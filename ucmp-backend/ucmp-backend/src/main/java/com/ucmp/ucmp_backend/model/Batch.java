@@ -16,7 +16,7 @@ public class Batch {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+// add batch id as PK = passing year
     private String batchName;
 
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL)
@@ -29,6 +29,7 @@ public class Batch {
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
             )
     private Set<Faculty> faculties = new HashSet<>();
+    //fix mapping based on new model "class"
 
     public void addFaculty(Faculty faculty) {
         faculties.add(faculty);

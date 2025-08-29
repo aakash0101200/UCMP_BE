@@ -16,7 +16,6 @@ import lombok.*;
 public class Student {
 
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -42,7 +41,7 @@ public class Student {
     @JoinColumn(name="batch_id")
     private Batch batch;
 
-    @ManyToOne
+    @ManyToOne // error expected
     @JoinColumn(name = "section_id")
     private Section section;
 

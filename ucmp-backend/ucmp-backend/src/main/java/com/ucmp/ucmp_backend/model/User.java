@@ -41,7 +41,7 @@ public class User {
     private String email;
 
     @Column
-    private String depaerment;
+    private String department;
 
     @Column
     private String designation;
