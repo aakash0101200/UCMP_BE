@@ -1,24 +1,19 @@
-//list or set
 package com.ucmp.ucmp_backend.service;
 import com.ucmp.ucmp_backend.dto.LoginRequest;
 import com.ucmp.ucmp_backend.dto.LoginResponse;
 import com.ucmp.ucmp_backend.dto.ProfileResponse;
 import com.ucmp.ucmp_backend.dto.RegisterRequest;
-import com.ucmp.ucmp_backend.model.Role;
 
 import com.ucmp.ucmp_backend.config.JwtUtil;
 import com.ucmp.ucmp_backend.model.*;
 import com.ucmp.ucmp_backend.repository.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.lang.model.element.Name;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
