@@ -1,22 +1,20 @@
 package com.ucmp.ucmp_backend.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProfileUpdateRequest {
-    private String name;
+    private String name; //editable user fields
+
+    //Editable Profile fields
     private String profilePictureUrl;
 
-    //Student fields
-    private String department;
-    private String year;
-    private String rollNumber;
-
-    //Faculty fields
-    private String designation;
-    private String officeLocation;
-    private String officeHours;
+    private String phoneNumber;
+    private String address;
+    private String ___;
 
 }

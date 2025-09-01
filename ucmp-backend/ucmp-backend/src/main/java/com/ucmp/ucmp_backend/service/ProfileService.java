@@ -18,8 +18,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ProfileService {
     private final UserRepository userRepository;
-    private final StudentRepository studentRepository;
-    private final FacultyRepository facultyRepository;
     private final ProfileRepository profileRepository;
 
     public Profile  updateProfile(String collegeId, ProfileUpdateRequest request){
@@ -37,27 +35,27 @@ public class ProfileService {
          }
 
          //Role-based updates
-        if(user.getRole() == Role.STUDENT) {
-            Student student = user.getStudent();
-            if(student == null) throw new RuntimeException("Student Profile not Found");
-            if(request.getDepartment()!= null)
-                student.setDepartment(request.getDepartment());
-            if (request.getYear() != null)
-                student.setYear(request.getYear());
-            if (request.getRollNumber() != null)
-                student.setRollNumber(request.getRollNumber());
-        } else if (user.getRole() == Role.FACULTY) {
-            Faculty faculty = user.getFaculty();
-            if(faculty == null) throw new RuntimeException("Faculty not Found");
-            if (request.getDepartment() != null)
-                faculty.setDepartment(request.getDepartment());
-            if (request.getDesignation()!= null)
-                faculty.setDesignation(request.getDesignation());
-            if(request.getOfficeLocation()!= null)
-                faculty.setOfficeLocation(request.getOfficeLocation());
-            if (request.getOfficeHours() != null)
-                faculty.setOfficeHours(request.getOfficeHours());
-        }
+//        if(user.getRole() == Role.STUDENT) {
+//            Student student = user.getStudent();
+//            if(student == null) throw new RuntimeException("Student Profile not Found");
+//            if(request.getDepartment()!= null)
+//                student.setDepartment(request.getDepartment());
+//            if (request.getYear() != null)
+//                student.setYear(request.getYear());
+//            if (request.getRollNumber() != null)
+//                student.setRollNumber(request.getRollNumber());
+//        } else if (user.getRole() == Role.FACULTY) {
+//            Faculty faculty = user.getFaculty();
+//            if(faculty == null) throw new RuntimeException("Faculty not Found");
+//            if (request.getDepartment() != null)
+//                faculty.setDepartment(request.getDepartment());
+//            if (request.getDesignation()!= null)
+//                faculty.setDesignation(request.getDesignation());
+//            if(request.getOfficeLocation()!= null)
+//                faculty.setOfficeLocation(request.getOfficeLocation());
+//            if (request.getOfficeHours() != null)
+//                faculty.setOfficeHours(request.getOfficeHours());
+//        }
 
         //Save changes
         userRepository.save(user);

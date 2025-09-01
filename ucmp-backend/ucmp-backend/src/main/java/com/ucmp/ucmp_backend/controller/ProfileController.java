@@ -43,7 +43,7 @@ public class ProfileController {
                 profile.getName(),
                 profile.getEmail(),
                 profile.getProfilePictureUrl(),
-                user.getRole().name()
+                user.getRoles().name()
         );
         return ResponseEntity.ok(profile);
     }

@@ -10,7 +10,10 @@ import lombok.*;
 
 
 @Entity
-@Table(name = "profiles")
+@Table(name = "profiles",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id"})
+        })
 @AllArgsConstructor @NoArgsConstructor
 @Getter
 @Setter
@@ -21,21 +24,17 @@ public class Profile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long profileId;
 
-    @Column(unique = true, name = "college_id")
-    private String collegeId;
-
-    @Column(name="name")
-    private String name;
-
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
-    @Email
-    private String email;
+    @Column(name = "Phone_number" )
+    private String phoneNumber;
 
-    @OneToOne //(mappedBy = "profile")
-    @JsonIgnore //prevents Recursion
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private String address;
+
+    @OneToOne
+//    @MapsId   //ensure user_id == profile_Id no duplicate college Id stored here
+    @JoinColumn(name = "user_id")
     private User user;
 
 

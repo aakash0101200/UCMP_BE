@@ -1,3 +1,4 @@
+//list or set
 package com.ucmp.ucmp_backend.service;
 import com.ucmp.ucmp_backend.dto.LoginRequest;
 import com.ucmp.ucmp_backend.dto.LoginResponse;
@@ -17,15 +18,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.lang.model.element.Name;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    @Autowired
+
     private final UserRepository userRepository;
-    @Autowired
+
     private final StudentRepository studentRepository;
-    @Autowired
+
     private final FacultyRepository facultyRepository;
     private final ProfileRepository profileRepository;
     private final BatchRepository batchRepository;
@@ -34,7 +41,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     // Register new user
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(@Valid RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
@@ -115,8 +122,13 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
+//   Convert roles
+        Set<String> roleNames = user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .collect(Collectors.toSet());
 
-        String token = jwtUtil.generateToken(user.getCollegeId(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getCollegeId(), roleNames);
+
 
         Profile profile = profileRepository.getProfilesByCollegeId(user.getCollegeId())
                 .orElse(null);
@@ -124,7 +136,7 @@ public class AuthService {
                 ? ProfileResponse.builder()
                 .name(profile.getName())
                 .email(profile.getEmail())
-                .role(user.getRole().name())
+                .roles(Collections.singletonList(String.join(",", roleNames)))
 //                .department(user.getDepaerment())
 //                .designation(user.getDesignation())
                 .collegeId(user.getCollegeId())
@@ -132,7 +144,7 @@ public class AuthService {
                 : ProfileResponse.builder()
                 .name(user.getName())
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .roles((List<String>) roleNames)
                 .collegeId(user.getCollegeId())
                 .build();
 

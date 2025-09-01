@@ -8,50 +8,44 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(columnNames = "email"),
         @UniqueConstraint(columnNames = "collegeId")
 })
-@Getter
-@Setter
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-//@Inheritance(strategy = InheritanceType.JOINED) // This is key for the inheritance
+@ToString(exclude = {"password"})
+@EqualsAndHashCode(exclude = {"password"})
+
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
+    @NotNull
     @Column(unique = true, updatable = false)
     private String collegeId; // e.g., "STU123", "FAC456"
 
+    @NotNull
     @Column(nullable = false)
+
     private String password;
 
+    @NotNull
     @Column(nullable = false)
     private String name;
 
     @Email
+    @NotNull
     @Column(unique = true , nullable = false)
     private String email;
 
-    @Column
-    private String department;
-
-    @Column
-    private String designation;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
-//
-//    @Column(nullable = false)
-//    private boolean isVerified = false; // For email/account verification
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -59,16 +53,15 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // Many to Many Roles
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
-
-//    // Constructor for registration
-//    public User(String collegeId, String password, String name, String email, Role role) {
-//        this.collegeId = collegeId;
-//        this.password = password;
-//        this.name = name;
-//        this.email = email;
-//        this.role = role;
-//    }
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Profile profile;

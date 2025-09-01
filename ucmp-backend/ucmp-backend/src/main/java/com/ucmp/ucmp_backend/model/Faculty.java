@@ -1,9 +1,8 @@
 package com.ucmp.ucmp_backend.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,28 +10,36 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "faculties")
-@Getter
-@Setter
+@Table(name = "faculties",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id"})
+        })
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Faculty {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // Same as user.ID (MapsId)
 
-    @Column(unique = true, nullable = false)
-    private String collegeId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private  User user;
 
     private String department;
     private String designation;
     private String officeLocation;
     private String officeHours; // Could be a more complex type
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private  User user;
 
-    @ManyToMany(mappedBy = "faculties") //if faculty teaches multiple batches
+
+    @ManyToMany
+    @JoinTable(
+            name = "section_faculty",
+            joinColumns = @JoinColumn(name = "faculty_id"),
+            inverseJoinColumns = @JoinColumn(name = "section_id")
+    )
     private Set<Section> sections = new HashSet<>();
 
 //    @OneToMany(mappedBy = "faculty", cascade =  CascadeType.ALL, orphanRemoval = true)
@@ -48,7 +55,7 @@ public class Faculty {
         this.user.setPassword (password);
         this.user.setName(name);
         this.user.setEmail(email);
-        this.user.setRole(Role.FACULTY);
+//        this.user.setRole(Role.FACULTY);
 
         //initialize faculty specific fields
         this.department = department;

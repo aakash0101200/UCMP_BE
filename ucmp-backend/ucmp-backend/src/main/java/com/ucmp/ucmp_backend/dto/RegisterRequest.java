@@ -1,6 +1,7 @@
 package com.ucmp.ucmp_backend.dto;
 
 import com.ucmp.ucmp_backend.model.Role;
+import com.ucmp.ucmp_backend.model.RoleName;
 import lombok.Builder;
 import lombok.Data;
 import jakarta.validation.constraints.*;
@@ -28,7 +29,7 @@ public class RegisterRequest {
 //    private String lastName;
     private String email;
     private String password;
-    private Role role; // "STUDENT", "FACULTY", "ADMIN"
+    private RoleName RoleName; // "STUDENT", "FACULTY", "ADMIN"
 
     private String branch;
     private String year;
