@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.ucmp.ucmp_backend.model.RoleName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
