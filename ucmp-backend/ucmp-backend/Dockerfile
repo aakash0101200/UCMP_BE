@@ -1,10 +1,18 @@
-# Stage 1: Build with Maven + Java 21
-FROM maven:3.9.3-jdk-21 AS build
+# Stage 1: Build with Maven on Java 21
+FROM eclipse-temurin:21-jdk-slim AS build
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
+# Copy your Maven config and source
 COPY pom.xml .
 COPY src ./src
 
+# Build the project
 RUN mvn dependency:resolve
 RUN mvn clean package -DskipTests
 
@@ -15,4 +23,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8081
+
 ENTRYPOINT ["java","-jar","app.jar"]
