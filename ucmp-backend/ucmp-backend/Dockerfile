@@ -5,7 +5,6 @@ WORKDIR /app
 COPY ucmp-backend/ucmp-backend/pom.xml .
 COPY ucmp-backend/ucmp-backend/src ./src
 
-
 RUN mvn clean package -DskipTests -B
 
 # Runtime stage using official OpenJDK 21 image
