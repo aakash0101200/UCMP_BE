@@ -6,7 +6,6 @@ COPY pom.xml .
 COPY src ./src
 
 RUN mvn clean package -DskipTests -B
-
 # Runtime stage using official OpenJDK 21 image
 FROM openjdk:21-jdk-slim
 WORKDIR /app
