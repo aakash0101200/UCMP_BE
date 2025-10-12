@@ -2,8 +2,8 @@
 FROM smetecnologia/maven:3.9.6-openjdk-21 AS builder
 WORKDIR /app
 
-COPY pom.xml .
-COPY src ./src
+COPY ucmp-backend/ucmp-backend/pom.xml .
+COPY ucmp-backend/ucmp-backend/src ./src
 
 RUN mvn clean package -DskipTests -B
 # Runtime stage using official OpenJDK 21 image
