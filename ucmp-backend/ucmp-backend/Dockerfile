@@ -1,8 +1,9 @@
 FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
-COPY pom.xml .
-COPY src ./src
+COPY ucmp-backend/ucmp-backend/pom.xml .
+COPY ucmp-backend/ucmp-backend/src ./src
+
 RUN mvn clean package -DskipTests
 
 RUN mvn -B dependency:resolve
