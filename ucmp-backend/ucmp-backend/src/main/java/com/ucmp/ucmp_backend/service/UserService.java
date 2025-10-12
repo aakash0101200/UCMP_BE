@@ -3,95 +3,86 @@ package com.ucmp.ucmp_backend.service;
 import com.ucmp.ucmp_backend.model.*;
 import com.ucmp.ucmp_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // Injected from Security config
 
-//    @Transactional
-//    public User createStudent(StudentRegistrationRequest request) {
-//        // Check if email or collegeId already exists
-//        if (userRepository.existsByEmailOrCollegeId(request.getEmail(), request.getCollegeId())) {
-//            throw new RuntimeException("User with this email or ID already exists.");
-//        }
-//
-//        String encryptedPassword = passwordEncoder.encode(request.getPassword());
-//
-//        // Find advisor if provided
-//        Faculty advisor = null;
-//        if (request.getFacultyAdvisorId() != null) {
-//            // This fetch could be optimized, but for clarity:
-//            advisor = (Faculty) userRepository.findById(request.getFacultyAdvisorId())
-//                    .orElseThrow(() -> new RuntimeException("Advisor not found"));
-//            // Ensure the found user is actually a Faculty
-//            if (advisor.getRole() != User.Role.FACULTY) {
-//                throw new RuntimeException("The provided advisor ID is not a faculty member.");
-//            }
-//        }
-//
-//        Student newStudent = new Student(
-//                request.getCollegeId(),
-//                encryptedPassword,
-//                request.getName(),
-//                request.getEmail(),
-//                request.getMajor(),
-//                request.getEnrollmentYear()
-//        );
-//        newStudent.setFacultyAdvisor(advisor);
-//
-//        return userRepository.save(newStudent);
-//    }
-//
-//    @Transactional
-//    public User createFaculty(FacultyRegistrationRequest request) {
-//        if (userRepository.existsByEmailOrCollegeId(request.getEmail(), request.getCollegeId())) {
-//            throw new RuntimeException("User with this email or ID already exists.");
-//        }
-//
-//        String encryptedPassword = passwordEncoder.encode(request.getPassword());
-//
-//        Faculty newFaculty = new Faculty(
-//                request.getCollegeId(),
-//                encryptedPassword,
-//                request.getName(),
-//                request.getEmail(),
-//                request.getDepartment(),
-//                request.getOfficeLocation()
-//        );
-//        // officeHours can be set separately if not in constructor
-//        newFaculty.setOfficeHours(request.getOfficeHours());
-//
-//        return userRepository.save(newFaculty);
-//    }
-//
-//    // Similar method for createAdmin...
-//    // User finder methods...
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-
+    /**
+     * Retrieves all users from the database.
+     * @return A list of all User entities.
+     */
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
     }
 
-    public User saveUser(User user) {
+    /**
+     * Retrieves a user by their unique college ID.
+     * @param collegeId The unique college ID of the user.
+     * @return An Optional containing the User entity if found, otherwise an empty Optional.
+     */
+    public Optional<User> findUserByCollegeId(String collegeId) {
+        return userRepository.findByCollegeId(collegeId);
+    }
+
+    /**
+     * Retrieves a user by their email.
+     * @param email The unique email address of the user.
+     * @return An Optional containing the User entity if found, otherwise an empty Optional.
+     */
+    public Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Creates a new user in the database.
+     * @param user The User entity to be saved.
+     * @return The saved User entity.
+     */
+    @Transactional
+    public User createUser(User user) {
         return userRepository.save(user);
     }
 
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
+    /**
+     * Updates an existing user's information.
+     * @param collegeId The college ID of the user to update.
+     * @param updatedUser The User entity containing the new data.
+     * @return The updated User entity.
+     * @throws ResponseStatusException if the user is not found.
+     */
+    @Transactional
+    public User updateUser(String collegeId, User updatedUser) {
+        User existingUser = userRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with college ID: " + collegeId));
+
+        // Update fields that are allowed to change
+        existingUser.setName(updatedUser.getName());
+        existingUser.setEmail(updatedUser.getEmail());
+
+        return userRepository.save(existingUser);
     }
 
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    /**
+     * Deletes a user from the database by their college ID.
+     * @param collegeId The college ID of the user to delete.
+     * @throws ResponseStatusException if the user is not found.
+     */
+    @Transactional
+    public void deleteUser(String collegeId) {
+        if (!userRepository.existsByCollegeId(collegeId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with college ID: " + collegeId);
+        }
+        userRepository.deleteByCollegeId(collegeId);
     }
 }

@@ -1,10 +1,8 @@
 package com.ucmp.ucmp_backend.model;
-import com.ucmp.ucmp_backend.repository.StudentRepository;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Entity
@@ -15,41 +13,32 @@ import lombok.*;
 @Setter
 public class Student {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String collegeId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonBackReference
+    private User user;   //link back to user
 
-    private String rollNumber;
-    private String department;
-    private String year;
-
-
-//    @OneToOne(mappedBy = "student",cascade = CascadeType.ALL, orphanRemoval = true)
-//    @MapsId
-//    @JoinColumn()
-//    private Profile profile;
-    //link to user
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="batch_id")
     private Batch batch;
 
-    @ManyToOne // error expected
+    @ManyToOne(fetch = FetchType.LAZY) // error expected )(Section implies batch if modeled properly
     @JoinColumn(name = "section_id")
     private Section section;
 
+    @NotNull
+    @Column(unique = true)
+    private String rollNumber;
+
+    @Column(name = "college_id", unique = true, nullable = false)
+    private String collegeId;
 
 
-//    @ManyToOne
-//    @JoinColumn(name = "profile_id", nullable = false)
-//    private Profile profile;
-    //profile will be accessed through user .getprofile
+    private String year; //consider making year an enum or separate table if needed
+
+
 }
-

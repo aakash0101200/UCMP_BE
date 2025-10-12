@@ -1,22 +1,52 @@
 package com.ucmp.ucmp_backend.dto;
-
-import com.ucmp.ucmp_backend.model.Role;
 import jakarta.validation.constraints.Email;
-import jdk.jfr.Name;
 import lombok.*;
 
+import java.util.List;
+import jakarta.validation.constraints.Size;
+
 @Getter
-@Setter
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ProfileResponse {
     private String collegeId;
     private String email;
-    private String role;
-    private String name;
-    private String profilePictureUrl;
 
+    private String name;
+
+    // Profile fields
+    private String profilePictureUrl;
+    private String phoneNumber;
+    private String address;
+
+    private List<String> roles;
+
+    // Role-specific subobjects (nullable)
+    private StudentInfo student;
+    private FacultyInfo faculty;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StudentInfo {
+        private String rollNumber;
+        private String year;
+        private String batchName;
+        private String sectionName;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FacultyInfo {
+        private String department;
+        private String designation;
+        private String officeLocation;
+        private String officeHours;
+        private String status; // ACTIVE, INACTIVE, etc.
+    }
 
 }

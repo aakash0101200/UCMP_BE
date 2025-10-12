@@ -1,58 +1,72 @@
 package com.ucmp.ucmp_backend.config;
 
-import io.jsonwebtoken.Claims;
+import com.ucmp.ucmp_backend.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
 
 @Component
+@RequiredArgsConstructor
 public class JwtRequestFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        final String authorizationHeader = request.getHeader("Authorization");
-        final String path = request.getRequestURI();
+        String path = request.getRequestURI();
 
-        // Allow unauthenticated paths to pass through
+        // 🔹 Skip JWT validation for public endpoints
         if (path.startsWith("/api/auth")) {
-            chain.doFilter(request, response);
+            filterChain.doFilter(request, response);
             return;
         }
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.substring(7);
+        // Extract JWT token from Authorization header
+        final String jwt = jwtUtil.extractTokenFromRequest(request);
+
+        String collegeId = null;
+
+        if (jwt != null) {
             try {
-                Claims claims = jwtUtil.extractClaims(token);
-                if (claims.getExpiration().after(new Date())) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    claims.getSubject(),
-                                    null,
-                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + claims.get("role", String.class)))
-                            );
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                collegeId = jwtUtil.extractCollegeId(jwt);
             } catch (Exception e) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                System.err.println("JWT token parsing failed: " + e.getMessage());
+                //  Don't block the request, just continue (unauthenticated)
+                filterChain.doFilter(request, response);
                 return;
             }
         }
 
-        chain.doFilter(request, response);
+        if (collegeId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(collegeId);
+
+            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
+        filterChain.doFilter(request, response);
     }
 }

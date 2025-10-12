@@ -60,13 +60,12 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         try{
-            authService.register(request);
-            return ResponseEntity.ok("User Register Successfully");
+            LoginResponse response = authService.register(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException exception){
             return  ResponseEntity.badRequest().body(null);
         }
     }
-
-    }
+}

@@ -1,22 +1,28 @@
 package com.ucmp.ucmp_backend.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProfileUpdateRequest {
-    private String name;
+    @Size(min = 2, max = 100)
+    private String name; //editable user fields
+
+    //Editable Profile fields
+    @Size(max = 500)
     private String profilePictureUrl;
 
-    //Student fields
-    private String department;
-    private String year;
-    private String rollNumber;
+    @Pattern(
+            regexp = "^(\\+\\d{1,3}[- ]?)?\\d{10}$",
+            message = "Invalid phone number"
+    )
+    private String phoneNumber;
 
-    //Faculty fields
-    private String designation;
-    private String officeLocation;
-    private String officeHours;
+    @Size(min = 2, max = 200)
+    private String address;
 
 }
