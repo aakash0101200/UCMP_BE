@@ -1,16 +1,14 @@
-# Stage 1: Build the JAR
-FROM openjdk:17-jdk-slim AS build
+# Stage 1: Build with Maven
+FROM maven:3.9.3-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy entire project to include mvnw and .mvn
-COPY . .
-
-# Grant execute permission on mvnw
-RUN chmod +x mvnw
+# Copy Maven config and source
+COPY pom.xml .
+COPY src ./src
 
 # Download dependencies and build
-RUN ./mvnw dependency:resolve
-RUN ./mvnw clean package -DskipTests
+RUN mvn dependency:resolve
+RUN mvn clean package -DskipTests
 
 # Stage 2: Run the app
 FROM openjdk:17-jdk-slim
