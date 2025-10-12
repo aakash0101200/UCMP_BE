@@ -1,42 +1,34 @@
 package com.ucmp.ucmp_backend.dto;
 
-import com.ucmp.ucmp_backend.model.Role;
 import com.ucmp.ucmp_backend.model.RoleName;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import jakarta.validation.constraints.*;
 
-//@Data
-//public class RegisterRequest {
-//     private String name;
-//     @Email private String email;
-//     @Size(min = 8) private String password;
-//
-//    private Role role;
-//     private String collegeId; // STU101
-//
-//
-//
-//}
-import lombok.Getter;
-import lombok.Setter;
+import java.util.List;
 
 @Getter @Setter
 @Data @Builder
+
+@AllArgsConstructor
+@NoArgsConstructor
 public class RegisterRequest {
+    @NotBlank
     private String collegeId;
+    @NotBlank
     private String name;
-//    private String lastName;
+    @NotBlank
+    @Email
     private String email;
+    @NotBlank
     private String password;
-    private RoleName RoleName; // "STUDENT", "FACULTY", "ADMIN"
-
-    private String branch;
-    private String year;
+    @NotEmpty
+    @NotEmpty
+    private List<RoleName> roles = List.of(RoleName.STUDENT);
     private String rollNumber;
-
+    private Integer year;
+    private String branch;
     private String department;
-    public String Designation;
+    private String designation;
+
 
 }
-

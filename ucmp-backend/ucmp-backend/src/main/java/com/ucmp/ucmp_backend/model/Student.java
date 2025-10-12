@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -18,6 +19,7 @@ public class Student {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonBackReference
     private User user;   //link back to user
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,9 +34,11 @@ public class Student {
     @Column(unique = true)
     private String rollNumber;
 
-    private String CollegeId;
+    @Column(name = "college_id", unique = true, nullable = false)
+    private String collegeId;
 
-    //private String year; //consider making year an enum or separate table if needed
+
+    private String year; //consider making year an enum or separate table if needed
 
 
 }

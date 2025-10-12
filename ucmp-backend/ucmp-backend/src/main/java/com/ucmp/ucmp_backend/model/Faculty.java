@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -25,8 +26,10 @@ public class Faculty {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonBackReference
     private  User user;
 
+    private String collegeId;
     private String department;
     private String designation;
     private String officeLocation;
@@ -62,6 +65,7 @@ public class Faculty {
         this.officeLocation = officeLocation;
         this.designation = designation;
     }
+
 
 //    @ManyToOne
 //    @JoinColumn(name = "profile_id", nullable = false)

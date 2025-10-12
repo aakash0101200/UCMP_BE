@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
     Optional<Profile> getProfileByUserId(Long userId);
-    Optional<Profile> getProfilesByCollegeId(String collegeId);
+    Optional<Profile> findByUser_CollegeId(String collegeId);
 
 
 

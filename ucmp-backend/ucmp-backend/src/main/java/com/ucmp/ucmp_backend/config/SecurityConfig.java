@@ -1,5 +1,7 @@
 package com.ucmp.ucmp_backend.config;
 
+import com.ucmp.ucmp_backend.repository.UserRepository;
+import com.ucmp.ucmp_backend.service.MyUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -25,29 +27,32 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtRequestFilter jwtRequestFilter) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**",
-                                "/api/auth/register").permitAll() // ✅ Register/Login public
+                        // All auth endpoints (register, login) are public
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/announcements/**").permitAll()
                         .requestMatchers("/api/students/**").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/profile/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtRequestFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
 
         return http.build();
     }
 
+    /**
+     * This bean method now correctly receives its dependencies (JwtUtil, MyUserDetailsService, and UserRepository)
+     * as method parameters. Spring's IoC container automatically provides them.
+     */
     @Bean
-    public JwtRequestFilter jwtRequestFilter() {
-        return new JwtRequestFilter();
+    public JwtRequestFilter jwtRequestFilter(JwtUtil jwtUtil, MyUserDetailsService userDetailsService, UserRepository userRepository) {
+        return new JwtRequestFilter(jwtUtil, userDetailsService, userRepository);
     }
 
     @Bean
@@ -58,7 +63,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ Your frontend
+        config.setAllowedOrigins(List.of("http://localhost:5173")); // Your frontend URL
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Collections.singletonList("*"));
         config.setAllowCredentials(true);

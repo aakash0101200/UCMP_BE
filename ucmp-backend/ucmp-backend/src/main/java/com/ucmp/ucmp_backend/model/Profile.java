@@ -2,41 +2,37 @@ package com.ucmp.ucmp_backend.model;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 
 @Entity
 @Table(name = "profiles",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id"})
-        })
-@AllArgsConstructor @NoArgsConstructor
-@Getter
-@Setter
+        uniqueConstraints = @UniqueConstraint(columnNames = "user_id"))
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Profile {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long profileId;
+    private Long id;
+    private  String name;
 
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
-    @Column(name = "Phone_number" )
+    @Column(name = "phone_number")
     private String phoneNumber;
-
+    private String email;
     private String address;
 
     @OneToOne
-//    @MapsId   //ensure user_id == profile_Id no duplicate college Id stored here
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
     private User user;
 
-
-
+    private String User_CollegeId;
 }
