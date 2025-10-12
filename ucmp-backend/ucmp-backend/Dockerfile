@@ -2,15 +2,14 @@
 FROM openjdk:17-jdk-slim AS build
 WORKDIR /app
 
-# Copy Maven wrapper & pom
-COPY mvnw pom.xml ./
-COPY .mvn/ .mvn
+# Copy entire project to include mvnw and .mvn
+COPY . .
 
-# Download dependencies
+# Grant execute permission on mvnw
+RUN chmod +x mvnw
+
+# Download dependencies and build
 RUN ./mvnw dependency:resolve
-
-# Copy source and build
-COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
 # Stage 2: Run the app
@@ -20,8 +19,7 @@ WORKDIR /app
 # Copy the built JAR
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose your application port
+# Expose port
 EXPOSE 8081
 
-# Start the application
 ENTRYPOINT ["java","-jar","app.jar"]
