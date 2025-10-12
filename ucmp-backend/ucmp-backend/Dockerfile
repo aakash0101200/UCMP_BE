@@ -4,10 +4,8 @@ WORKDIR /app
 
 COPY pom.xml .
 COPY src ./src
-
 RUN mvn -B dependency:resolve
 RUN mvn -B clean package -DskipTests
-
 # Run Stage: Java 17 runtime image
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
