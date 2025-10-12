@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/announcements/**").permitAll()
                         .requestMatchers("/api/students/**").permitAll()
                         .requestMatchers("/api/profile/**").permitAll()
+                        .requestMatchers("/", "/actuator/health").permitAll() // <-- ADDING THIS LINE
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
