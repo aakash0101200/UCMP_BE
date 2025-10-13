@@ -60,11 +60,13 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // Your frontend URL
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "https://ucmp-khaki.vercel.app"   // <-- add your deployed frontend
+        ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Collections.singletonList("*"));
         config.setAllowCredentials(true);
