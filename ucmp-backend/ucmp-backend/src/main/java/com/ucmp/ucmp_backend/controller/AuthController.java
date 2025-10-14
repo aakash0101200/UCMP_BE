@@ -15,10 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -59,13 +63,44 @@ public class AuthController {
     }
 
 
+//    @PostMapping("/register")
+//    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+//        try{
+//            LoginResponse response = authService.register(request);
+//            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+//        } catch (RuntimeException exception){
+//            return ResponseEntity.badRequest().body(null);
+//        }
+//    }
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        try{
+    public ResponseEntity<?> register(
+            @Valid @RequestBody RegisterRequest request,
+            BindingResult bindingResult
+    ) {
+        // 1. Handle validation errors
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(
+                            FieldError::getField,
+                            FieldError::getDefaultMessage
+                    ));
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("message", "Validation failed", "errors", errors));
+        }
+
+        // 2. Attempt registration
+        try {
             LoginResponse response = authService.register(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException exception){
-            return  ResponseEntity.badRequest().body(null);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(response);
+
+        } catch (RuntimeException exception) {
+            // 3. Handle business errors
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("message", exception.getMessage()));
         }
     }
 }
