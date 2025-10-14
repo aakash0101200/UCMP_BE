@@ -72,32 +72,34 @@ public class AuthController {
 //            return ResponseEntity.badRequest().body(null);
 //        }
 //    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @Valid @RequestBody RegisterRequest request,
             BindingResult bindingResult
     ) {
-        // 1. Handle validation errors
         if (bindingResult.hasErrors()) {
-            Map<String, String> errors = bindingResult.getFieldErrors().stream()
-                    .collect(Collectors.toMap(
-                            FieldError::getField,
-                            FieldError::getDefaultMessage
-                    ));
+            // Collect field errors into a single string for the top-level message
+            String allErrors = bindingResult.getFieldErrors().stream()
+                    .map(err -> err.getField() + " : " + err.getDefaultMessage())
+                    .collect(Collectors.joining("; "));
+            Map<String,Object> payload = Map.of(
+                    "message", "Validation failed",
+                    "errors", bindingResult.getFieldErrors().stream()
+                            .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage)),
+                    "details", allErrors
+            );
             return ResponseEntity
                     .badRequest()
-                    .body(Map.of("message", "Validation failed", "errors", errors));
+                    .body(payload);
         }
 
-        // 2. Attempt registration
         try {
             LoginResponse response = authService.register(request);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(response);
-
         } catch (RuntimeException exception) {
-            // 3. Handle business errors
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("message", exception.getMessage()));
