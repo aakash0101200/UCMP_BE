@@ -22,8 +22,8 @@ public class RegisterRequest {
     @NotBlank
     private String password;
     @NotEmpty
-    @NotEmpty
     private List<RoleName> roles = List.of(RoleName.STUDENT);
+    @NotBlank
     private String rollNumber;
     private Integer year;
     private String branch;
