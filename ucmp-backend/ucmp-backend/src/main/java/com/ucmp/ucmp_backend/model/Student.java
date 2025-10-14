@@ -2,6 +2,7 @@ package com.ucmp.ucmp_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -30,7 +31,7 @@ public class Student {
     @JoinColumn(name = "section_id")
     private Section section;
 
-
+    @NotBlank
     @Column(unique = true)
     private String rollNumber;
 
