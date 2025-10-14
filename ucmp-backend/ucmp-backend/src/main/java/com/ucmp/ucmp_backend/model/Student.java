@@ -30,7 +30,7 @@ public class Student {
     @JoinColumn(name = "section_id")
     private Section section;
 
-    @NotNull
+
     @Column(unique = true)
     private String rollNumber;
 
