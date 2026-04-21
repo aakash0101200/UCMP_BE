@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/announcements/**").permitAll()
                         .requestMatchers("/api/students/**").permitAll()
                         .requestMatchers("/api/profile/**").permitAll()
-                        .requestMatchers("/api/attendance/**").hasRole("FACULTY")
+
                         .requestMatchers("/", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
