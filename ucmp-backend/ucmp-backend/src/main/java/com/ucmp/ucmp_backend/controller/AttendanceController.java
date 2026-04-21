@@ -24,7 +24,7 @@ public class AttendanceController {
     private final StudentRepository studentRepository;
 
     @PostMapping("/start")
-    @PreAuthorize("hasRole('FACULTY')") // This is the standard RBAC approach
+    @PreAuthorize("hasAuthority('FACULTY')") // This is the standard RBAC approach
     public ResponseEntity<AttendanceSession> startSession(
             Authentication authentication,
             @RequestBody AttendanceStartRequestDto request) {
