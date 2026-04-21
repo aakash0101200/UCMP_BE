@@ -49,6 +49,7 @@ public class AttendanceController {
     }
 
     @PostMapping("/mark")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> markAttendance(
             Authentication authentication,
             @RequestBody AttendanceMarkRequestDto request) {
