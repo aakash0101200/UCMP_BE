@@ -29,6 +29,7 @@ public class RegisterRequest {
     private String branch;
     private String department;
     private String designation;
+    private List<Long> sectionIds;
 
 
 }

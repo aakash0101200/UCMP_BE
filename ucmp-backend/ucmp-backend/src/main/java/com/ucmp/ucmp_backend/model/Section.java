@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,7 @@ public class Section {
 
     private String sectionName;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "batch_id", nullable = false)
     private Batch batch;

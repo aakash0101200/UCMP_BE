@@ -2,6 +2,7 @@ package com.ucmp.ucmp_backend.controller;
 
 import com.ucmp.ucmp_backend.dto.AttendanceMarkRequestDto;
 import com.ucmp.ucmp_backend.dto.AttendanceStartRequestDto;
+import com.ucmp.ucmp_backend.dto.StudentAttendanceDTO;
 import com.ucmp.ucmp_backend.model.AttendanceSession;
 import com.ucmp.ucmp_backend.model.Faculty;
 import com.ucmp.ucmp_backend.model.Student;
@@ -14,6 +15,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
@@ -25,7 +29,7 @@ public class AttendanceController {
 
     @PostMapping("/start")
     @PreAuthorize("hasAuthority('FACULTY')") // This is the standard RBAC approach
-    public ResponseEntity<AttendanceSession> startSession(
+    public ResponseEntity<?> startSession(
             Authentication authentication,
             @RequestBody AttendanceStartRequestDto request) {
         String collegeId = authentication.getName();
@@ -39,7 +43,7 @@ public class AttendanceController {
             request.getLongitude(), 
             request.getRadiusInMeters()
         );
-        return ResponseEntity.ok(session);
+        return ResponseEntity.ok(Map.of("id", session.getId()));
     }
 
     @GetMapping("/session/{sessionId}/code")
@@ -49,7 +53,7 @@ public class AttendanceController {
     }
 
     @PostMapping("/mark")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<String> markAttendance(
             Authentication authentication,
             @RequestBody AttendanceMarkRequestDto request) {
@@ -69,6 +73,28 @@ public class AttendanceController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/active-session")
+    @PreAuthorize("hasAuthority('STUDENT')")
+    public ResponseEntity<?> getActiveSessionForStudent(Authentication authentication) {
+        String collegeId = authentication.getName();
+
+        // This logic finds the student, gets their section,
+        // and looks for an active session for that section.
+        return attendanceService.findActiveSessionForStudent(collegeId)
+                .map(session -> ResponseEntity.ok(Map.of(
+                        "id", session.getId(),
+                        "sectionName", session.getSection().getSectionName()
+                )))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/session/{sessionId}/records")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<List<StudentAttendanceDTO>> getSessionRecords(@PathVariable Long sessionId) {
+        List<StudentAttendanceDTO> records = attendanceService.getRecordsForSession(sessionId);
+        return ResponseEntity.ok(records);
     }
 
     @PostMapping("/session/{sessionId}/end")

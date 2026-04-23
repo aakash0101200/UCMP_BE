@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ucmp.ucmp_backend.service.AnnouncementService;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class Batch {
 // add batch id as PK = passing year
     private String batchName;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL)
     private Set<Student> students = new HashSet<>();
 
