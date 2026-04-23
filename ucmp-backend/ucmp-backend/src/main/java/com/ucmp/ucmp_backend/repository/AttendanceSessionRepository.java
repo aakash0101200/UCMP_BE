@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
     List<AttendanceSession> findByFacultyIdAndIsActiveTrue(Long facultyId);
     Optional<AttendanceSession> findByIdAndIsActiveTrue(Long id);
+    Optional<AttendanceSession> findBySectionIdAndIsActiveTrue(Long sectionId);
 }

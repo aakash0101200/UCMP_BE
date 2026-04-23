@@ -3,12 +3,18 @@ D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\config\
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\config\JwtRequestFilter.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\config\JwtUtil.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\config\SecurityConfig.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\AdminController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\AnnouncementController.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\AttendanceController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\AuthController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\EventController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\FacultyController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\ProfileController.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\controller\StudentController.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\AdminCreateFacultyRequest.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\AdminCreateStudentRequest.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\AttendanceMarkRequestDto.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\AttendanceStartRequestDto.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\AuthResponse.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\CreateScheduleSlotRequest.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\LoginRequest.java
@@ -22,6 +28,8 @@ D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\Use
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\mapper\StudentProfileMapper.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\AdminDetail.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\Announcements.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\AttendanceRecord.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\AttendanceSession.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\AuthResponse.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\Batch.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\Event.java
@@ -35,6 +43,8 @@ D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\S
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\TimetableEntry.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\model\User.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\AnnouncementRepository.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\AttendanceRecordRepository.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\AttendanceSessionRepository.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\BatchRepository.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\EventRepository.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\FacultyRepository.java
@@ -46,6 +56,7 @@ D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\reposit
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\TimetableEntryRepository.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\repository\UserRepository.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\service\AnnouncementService.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\service\AttendanceService.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\service\AuthService.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\service\BatchService.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\service\FacultyService.java

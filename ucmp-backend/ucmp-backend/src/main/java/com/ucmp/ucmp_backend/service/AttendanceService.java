@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.service;
 
+import com.ucmp.ucmp_backend.dto.StudentAttendanceDTO;
 import com.ucmp.ucmp_backend.model.*;
 import com.ucmp.ucmp_backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -12,14 +13,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AttendanceService {
 
     private final AttendanceSessionRepository sessionRepository;
-    private final AttendanceRecordRepository recordRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
     private final FacultyRepository facultyRepository;
     private final SectionRepository sectionRepository;
     private final StudentRepository studentRepository;
@@ -60,6 +63,29 @@ public class AttendanceService {
     }
 
     @Transactional
+    public void endSession(Long sessionId) {
+        AttendanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+        session.setActive(false);
+        session.setEndTime(LocalDateTime.now());
+        sessionRepository.save(session);
+    }
+
+    public Optional<AttendanceSession> findActiveSessionForStudent(String collegeId) {
+        // 1. Find the student by their collegeId
+        Student student = studentRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        // 2. Get the student's section ID
+        if (student.getSection() == null) {
+            return Optional.empty();
+        }
+
+        // 3. Find if there's an active session for that section
+        return sessionRepository.findBySectionIdAndIsActiveTrue(student.getSection().getId());
+    }
+
+    @Transactional
     public void markAttendance(Long sessionId, Long studentId, String submittedCode, Double latitude, Double longitude) {
         AttendanceSession session = sessionRepository.findByIdAndIsActiveTrue(sessionId)
             .orElseThrow(() -> new RuntimeException("Session not active or not found"));
@@ -67,7 +93,7 @@ public class AttendanceService {
         Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        if (recordRepository.existsByStudentIdAndSessionId(studentId, sessionId)) {
+        if (attendanceRecordRepository.existsByStudentIdAndAttendanceSessionId(studentId, sessionId)) {
             throw new RuntimeException("Attendance already marked for this session");
         }
 
@@ -93,23 +119,31 @@ public class AttendanceService {
 
         // Create Record
         AttendanceRecord record = AttendanceRecord.builder()
-            .session(session)
+            .attendanceSession(session)
             .student(student)
             .markedAt(LocalDateTime.now())
             .markedLatitude(latitude)
             .markedLongitude(longitude)
             .build();
 
-        recordRepository.save(record);
+        attendanceRecordRepository.save(record);
     }
 
-    @Transactional
-    public void endSession(Long sessionId) {
-        AttendanceSession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
-        session.setActive(false);
-        session.setEndTime(LocalDateTime.now());
-        sessionRepository.save(session);
+    public List<StudentAttendanceDTO> getRecordsForSession(Long sessionId) {
+        // Assuming you have an AttendanceRecordRepository
+        return attendanceRecordRepository.findByAttendanceSessionId(sessionId)
+                .stream()
+                .map(record -> {
+                    System.out.println("Mapping Student: " + record.getStudent().getCollegeId());
+                    System.out.println("Student Name in DB: " + record.getStudent().getName());
+
+                    return new StudentAttendanceDTO(
+                            record.getStudent().getName(),
+                            record.getStudent().getCollegeId(),
+                            record.getMarkedAt()
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     // --- Utility Methods ---

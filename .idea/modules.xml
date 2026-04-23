@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/UCMP_BE.iml" filepath="$PROJECT_DIR$/.idea/UCMP_BE.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ucmp-backend/ucmp-backend/ucmp-backend.iml" filepath="$PROJECT_DIR$/ucmp-backend/ucmp-backend/ucmp-backend.iml" />
     </modules>
   </component>
 </project>

@@ -1,9 +1,9 @@
 package com.ucmp.ucmp_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Entity
@@ -23,11 +23,13 @@ public class Student {
     @JsonBackReference
     private User user;   //link back to user
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="batch_id")
     private Batch batch;
 
-    @ManyToOne(fetch = FetchType.LAZY) // error expected )(Section implies batch if modeled properly
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY) // error expected (Section implies batch if modeled properly
     @JoinColumn(name = "section_id")
     private Section section;
 
@@ -35,8 +37,12 @@ public class Student {
     @Column(unique = true)
     private String rollNumber;
 
+    @Column(name = "name", nullable = false)
+    private String name;
+
     @Column(name = "college_id", unique = true, nullable = false)
     private String collegeId;
+
 
 
     private String year; //consider making year an enum or separate table if needed

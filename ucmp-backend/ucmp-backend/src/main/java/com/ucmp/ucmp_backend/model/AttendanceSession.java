@@ -1,5 +1,6 @@
 package com.ucmp.ucmp_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class AttendanceSession {
     @JoinColumn(name = "faculty_id", nullable = false)
     private Faculty faculty;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
     private Section section;
