@@ -26,7 +26,7 @@ public class AttendanceService {
     private final FacultyRepository facultyRepository;
     private final SectionRepository sectionRepository;
     private final StudentRepository studentRepository;
-
+    //fdhfjkdfjdknfkwhf
     @Transactional
     public AttendanceSession startSession(Long facultyId, Long sectionId, Double latitude, Double longitude, Double radiusInMeters) {
         Faculty faculty = facultyRepository.findById(facultyId)
