@@ -216,6 +216,7 @@ public class AuthService {
 
         // 4. Create Student and Map to Batch & Section
         Student student = new Student();
+        student.setName(request.getName());
         student.setUser(user);
         student.setCollegeId(user.getCollegeId());
         student.setRollNumber(request.getRollNumber());

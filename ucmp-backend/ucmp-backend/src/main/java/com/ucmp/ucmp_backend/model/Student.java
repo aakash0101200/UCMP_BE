@@ -38,6 +38,7 @@ public class Student {
     private String rollNumber;
 
     @Column(name = "name", nullable = false)
+    @NotBlank
     private String name;
 
     @Column(name = "college_id", unique = true, nullable = false)
