@@ -2,19 +2,40 @@ package com.ucmp.ucmp_backend.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Component
 public class JwtUtil  {
-    private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationMs = 3600000; // 1 hour
+    private final Key secretKey;
+    private final long expirationMs;
+
+    public JwtUtil(
+            @Value("${jwt.secret}") String jwtSecret,
+            @Value("${jwt.expiration:3600000}") long expirationMs
+    ) {
+        this.secretKey = deriveKey(jwtSecret);
+        this.expirationMs = expirationMs;
+    }
+
+    private static Key deriveKey(String jwtSecret) {
+        // Prefer base64-encoded secrets; fall back to raw string bytes for local/dev convenience.
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (RuntimeException ignored) {
+            return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        }
+    }
 
     // Generate token with collegeId as subject and role as claim
     public String generateToken(String collegeId, Set<String> role) {

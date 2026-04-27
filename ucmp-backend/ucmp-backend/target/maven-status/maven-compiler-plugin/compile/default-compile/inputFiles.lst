@@ -23,6 +23,8 @@ D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\Pro
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\ProfileUpdateRequest.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\RegisterRequest.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\ScheduleSlotDTO.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\SectionDTO.java
+D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\StudentAttendanceDTO.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\StudentProfileDTO.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\dto\UserResponse.java
 D:\ucmp_be\ucmp-backend\ucmp-backend\src\main\java\com\ucmp\ucmp_backend\mapper\StudentProfileMapper.java
