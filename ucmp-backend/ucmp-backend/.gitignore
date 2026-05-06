@@ -1,1 +1,13 @@
 target/
+# Ignore compiled classes
+*.class
+
+# Ignore build directories
+target/
+build/
+bin/
+
+# Ignore IDE settings
+.idea/
+*.iml
+.vscode/
