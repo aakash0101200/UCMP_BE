@@ -39,6 +39,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/students/**").permitAll()
                         .requestMatchers("/api/profile/**").permitAll()
 
+                        // Timetable, Rooms, Subjects — reads open to authenticated users,
+                        // writes protected by @PreAuthorize("hasAuthority('ADMIN')") in controllers
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/timetable/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/rooms/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/subjects/**").authenticated()
+
                         .requestMatchers("/", "/actuator/health", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
