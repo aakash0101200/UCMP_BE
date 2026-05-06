@@ -4,17 +4,38 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Set;
 
 @Component
 public class JwtUtil  {
-    private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationMs = 3600000; // 1 hour
+
+    private final Key secretKey;
+    private final long expirationMs;
+
+    /**
+     * Reads the signing key from application.properties (jwt.secret).
+     * This ensures the SAME key is used across restarts and deployments,
+     * so existing JWT tokens remain valid.
+     */
+    public JwtUtil(@Value("${jwt.secret}") String secret,
+                   @Value("${jwt.expiration}") long expirationMs) {
+        // Pad the secret to at least 32 bytes (required for HS256)
+        byte[] keyBytes = secret.getBytes();
+        if (keyBytes.length < 32) {
+            byte[] padded = new byte[32];
+            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
+            keyBytes = padded;
+        }
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.expirationMs = expirationMs;
+    }
 
     // Generate token with collegeId as subject and role as claim
     public String generateToken(String collegeId, Set<String> role) {
