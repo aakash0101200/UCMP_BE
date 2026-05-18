@@ -1,6 +1,7 @@
 package com.ucmp.ucmp_backend.controller;
 
 import com.ucmp.ucmp_backend.dto.SectionDTO;
+import com.ucmp.ucmp_backend.dto.FacultyDTO;
 import com.ucmp.ucmp_backend.model.Faculty;
 import com.ucmp.ucmp_backend.repository.FacultyRepository;
 import com.ucmp.ucmp_backend.service.FacultyService;
@@ -27,8 +28,16 @@ public class FacultyController {
     }
 
     @GetMapping
-    public List<Faculty> getAllFaculties() {
-        return facultyService.getAllFaculties();
+    public List<FacultyDTO> getAllFaculties() {
+        return facultyService.getAllFaculties().stream()
+                .map(f -> FacultyDTO.builder()
+                        .id(f.getId())
+                        .name(f.getUser() != null ? f.getUser().getName() : "Unknown")
+                        .collegeId(f.getCollegeId())
+                        .department(f.getDepartment())
+                        .designation(f.getDesignation())
+                        .build())
+                .toList();
     }
 
     @GetMapping("/{id}")
