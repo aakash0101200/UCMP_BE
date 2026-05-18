@@ -159,10 +159,10 @@ public class AttendanceService {
             }
         }
 
-        // Code validation (current + previous 15-second window)
+        // Code validation (current + previous 30-second window)
         long now = System.currentTimeMillis();
         String currentCode  = generateCodeForTime(session.getSecretSeed(), now);
-        String previousCode = generateCodeForTime(session.getSecretSeed(), now - 15000);
+        String previousCode = generateCodeForTime(session.getSecretSeed(), now - 30000);
 
         if (!submittedCode.equals(currentCode) && !submittedCode.equals(previousCode)) {
             throw new RuntimeException("Code is invalid or has expired.");
@@ -254,7 +254,7 @@ public class AttendanceService {
 
     // ── Utility: TOTP-style code generation ───────────────────────────────────
     public static String generateCodeForTime(String seed, long timeMillis) {
-        long timeWindow = timeMillis / 15000;
+        long timeWindow = timeMillis / 30000; // 30 second rotation instead of 15
         String input = seed + timeWindow;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
