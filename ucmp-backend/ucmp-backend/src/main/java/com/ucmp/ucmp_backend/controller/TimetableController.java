@@ -126,7 +126,7 @@ public class TimetableController {
     public ResponseEntity<?> createAssignment(@Valid @RequestBody SubjectAssignmentRequest request) {
         try {
             SubjectAssignment result = timetableService.createAssignment(request);
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(mapToAssignmentDTO(result));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -138,18 +138,40 @@ public class TimetableController {
      */
     @GetMapping("/assignment")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<List<SubjectAssignment>> getAssignments(@RequestParam String term) {
-        return ResponseEntity.ok(timetableService.getAssignmentsForTerm(term));
+    public ResponseEntity<List<SubjectAssignmentDTO>> getAssignments(@RequestParam String term) {
+        List<SubjectAssignmentDTO> dtos = timetableService.getAssignmentsForTerm(term).stream()
+                .map(this::mapToAssignmentDTO)
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     /**
      * GET /api/timetable/assignment/section/{id}?term=2026-27-ODD
      */
     @GetMapping("/assignment/section/{sectionId}")
-    public ResponseEntity<List<SubjectAssignment>> getAssignmentsForSection(
+    public ResponseEntity<List<SubjectAssignmentDTO>> getAssignmentsForSection(
             @PathVariable Long sectionId,
             @RequestParam String term) {
-        return ResponseEntity.ok(timetableService.getAssignmentsForSection(sectionId, term));
+        List<SubjectAssignmentDTO> dtos = timetableService.getAssignmentsForSection(sectionId, term).stream()
+                .map(this::mapToAssignmentDTO)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
+
+    private SubjectAssignmentDTO mapToAssignmentDTO(SubjectAssignment a) {
+        return SubjectAssignmentDTO.builder()
+                .id(a.getId())
+                .subjectId(a.getSubject() != null ? a.getSubject().getId() : null)
+                .subjectCode(a.getSubject() != null ? a.getSubject().getCode() : null)
+                .subjectName(a.getSubject() != null ? a.getSubject().getName() : null)
+                .facultyId(a.getFaculty() != null ? a.getFaculty().getId() : null)
+                .facultyName(a.getFaculty() != null && a.getFaculty().getUser() != null ? a.getFaculty().getUser().getName() : null)
+                .facultyCollegeId(a.getFaculty() != null ? a.getFaculty().getCollegeId() : null)
+                .sectionId(a.getSection() != null ? a.getSection().getId() : null)
+                .sectionName(a.getSection() != null ? a.getSection().getSectionName() : null)
+                .academicTerm(a.getAcademicTerm())
+                .weeklySlots(a.getWeeklySlots())
+                .build();
     }
 
     /**

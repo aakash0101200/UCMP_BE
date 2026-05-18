@@ -33,7 +33,9 @@ public class ProfileResponse {
     public static class StudentInfo {
         private String rollNumber;
         private String year;
+        private Long batchId;
         private String batchName;
+        private Long sectionId;
         private String sectionName;
     }
 
@@ -42,6 +44,7 @@ public class ProfileResponse {
     @AllArgsConstructor
     @Builder
     public static class FacultyInfo {
+        private Long facultyId;
         private String department;
         private String designation;
         private String officeLocation;
