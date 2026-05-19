@@ -78,8 +78,14 @@ public class SecurityConfig {
                 "https://ucmp-khaki.vercel.app"   // <-- add your deployed frontend
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Collections.singletonList("*"));
+        config.setAllowedHeaders(Arrays.asList(
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept"
+        ));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
