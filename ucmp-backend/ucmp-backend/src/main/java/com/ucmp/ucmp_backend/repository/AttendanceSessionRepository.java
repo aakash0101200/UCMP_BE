@@ -86,4 +86,7 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
     long countUntaggedByFacultyIdAndSectionId(
             @Param("facultyId") Long facultyId,
             @Param("sectionId") Long sectionId);
+
+    // ── Faculty session history (newest first) ────────────────────────────────
+    List<AttendanceSession> findByFacultyIdOrderByStartTimeDesc(Long facultyId);
 }

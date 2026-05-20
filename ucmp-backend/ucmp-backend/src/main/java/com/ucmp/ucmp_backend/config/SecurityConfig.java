@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/announcements/**").permitAll()
                         .requestMatchers("/api/students/**").permitAll()
                         .requestMatchers("/api/profile/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
 
                         // Timetable, Rooms, Subjects, Sections — reads open to authenticated users,
                         // writes protected by @PreAuthorize("hasAuthority('ADMIN')") in controllers

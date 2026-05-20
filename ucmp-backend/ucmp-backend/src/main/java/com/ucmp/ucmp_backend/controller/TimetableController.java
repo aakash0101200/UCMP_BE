@@ -183,4 +183,28 @@ public class TimetableController {
         timetableService.deleteAssignment(id);
         return ResponseEntity.ok("Assignment deleted");
     }
+
+    /**
+     * POST /api/timetable/entries/{entryId}/cancel
+     * Allows faculty to cancel a specific day's class.
+     */
+    @PostMapping("/entries/{entryId}/cancel")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> cancelClass(
+            org.springframework.security.core.Authentication authentication,
+            @PathVariable Long entryId,
+            @RequestBody ClassCancellationRequestDto request) {
+        try {
+            String collegeId = authentication.getName();
+            com.ucmp.ucmp_backend.model.ClassCancellation cancellation = timetableService.cancelEntry(
+                    entryId,
+                    request.getCancellationDate(),
+                    request.getReason(),
+                    collegeId
+            );
+            return ResponseEntity.ok(cancellation);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

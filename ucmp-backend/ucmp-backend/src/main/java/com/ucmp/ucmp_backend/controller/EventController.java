@@ -36,6 +36,16 @@ public class EventController {
     }
 
     @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @GetMapping("/monthly")
+    public ResponseEntity<List<Event>> findEventsByMonth(
+            @RequestParam("year") int year, 
+            @RequestParam("month") int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+        return ResponseEntity.ok(eventRepo.findByDateBetween(startDate, endDate));
+    }
+
+    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Event> updateEvent(@PathVariable("id") Long id, @RequestBody Event updateEvent) {
         return eventRepo.findById(id)

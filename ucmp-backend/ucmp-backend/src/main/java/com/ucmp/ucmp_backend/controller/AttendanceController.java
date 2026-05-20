@@ -2,6 +2,7 @@ package com.ucmp.ucmp_backend.controller;
 
 import com.ucmp.ucmp_backend.dto.AttendanceMarkRequestDto;
 import com.ucmp.ucmp_backend.dto.AttendanceStartRequestDto;
+import com.ucmp.ucmp_backend.dto.ManualMarkRequestDto;
 import com.ucmp.ucmp_backend.dto.StudentAttendanceDTO;
 import com.ucmp.ucmp_backend.model.AttendanceSession;
 import com.ucmp.ucmp_backend.model.Faculty;
@@ -87,7 +88,10 @@ public class AttendanceController {
         return attendanceService.findActiveSessionForStudent(collegeId)
                 .map(session -> ResponseEntity.ok(Map.of(
                         "id", session.getId(),
-                        "sectionName", session.getSection().getSectionName())))
+                        "sectionName", session.getSection().getSectionName(),
+                        "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
+                        "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
+                )))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -104,6 +108,67 @@ public class AttendanceController {
     public ResponseEntity<String> endSession(@PathVariable Long sessionId) {
         attendanceService.endSession(sessionId);
         return ResponseEntity.ok("Session ended");
+    }
+
+    // ── Faculty: manually mark students present ────────────────────────────────
+    /**
+     * POST /api/attendance/session/{sessionId}/manual-mark
+     * Body: { "studentCollegeIds": ["22BCS001", "22BCS015"], "reason": "Dead phones" }
+     * Query param: forceOverride=true to mark even after grace window
+     *
+     * Works during ACTIVE sessions, within grace window after ENDED,
+     * and with forceOverride=true for any ENDED session (faculty flexibility).
+     */
+    @PostMapping("/session/{sessionId}/manual-mark")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> manualMarkAttendance(
+            Authentication authentication,
+            @PathVariable Long sessionId,
+            @RequestBody ManualMarkRequestDto request,
+            @RequestParam(defaultValue = "false") boolean forceOverride) {
+        try {
+            String collegeId = authentication.getName();
+            Faculty faculty = facultyRepository.findByCollegeId(collegeId)
+                    .orElseThrow(() -> new RuntimeException("Logged in user is not a Faculty"));
+
+            List<StudentAttendanceDTO> marked = attendanceService.manualMarkAttendance(
+                    sessionId, faculty.getId(),
+                    request.getStudentCollegeIds(),
+                    request.getReason(),
+                    forceOverride);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", marked.size() + " student(s) marked present",
+                    "markedStudents", marked));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ── Faculty: get absent students for a session ─────────────────────────────
+    /**
+     * GET /api/attendance/session/{sessionId}/absent-students
+     * Returns students who haven't marked attendance yet (for manual mark panel).
+     */
+    @GetMapping("/session/{sessionId}/absent-students")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> getAbsentStudents(@PathVariable Long sessionId) {
+        return ResponseEntity.ok(attendanceService.getAbsentStudentsForSession(sessionId));
+    }
+
+    // ── Faculty: session history (for post-session manual marking) ─────────────
+    /**
+     * GET /api/attendance/faculty/session-history
+     * Returns the faculty's recent sessions with present count and
+     * whether manual marking is still allowed.
+     */
+    @GetMapping("/faculty/session-history")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> getFacultySessionHistory(Authentication authentication) {
+        String collegeId = authentication.getName();
+        Faculty faculty = facultyRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new RuntimeException("Logged in user is not a Faculty"));
+        return ResponseEntity.ok(attendanceService.getFacultySessionHistory(faculty.getId()));
     }
 
     // ── Student: per-subject attendance summary ────────────────────────────────
@@ -124,10 +189,16 @@ public class AttendanceController {
         List<Map<String, Object>> result = attendanceRecordRepository
                 .findByStudentIdOrderByMarkedAtDesc(student.getId())
                 .stream()
-                .map(r -> Map.<String, Object>of(
-                        "sessionId",   r.getAttendanceSession().getId(),
-                        "sectionName", r.getAttendanceSession().getSection().getSectionName(),
-                        "markedAt",    r.getMarkedAt().toString()))
+                .map(r -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("sessionId", r.getAttendanceSession().getId());
+                    m.put("sectionName", r.getAttendanceSession().getSection().getSectionName());
+                    m.put("subjectName", r.getAttendanceSession().getSubject() != null
+                            ? r.getAttendanceSession().getSubject().getName() : "General");
+                    m.put("markedAt", r.getMarkedAt().toString());
+                    m.put("markedBy", r.getMarkedBy().name());
+                    return m;
+                })
                 .toList();
 
         return ResponseEntity.ok(result);

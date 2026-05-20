@@ -14,9 +14,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.ucmp.ucmp_backend.dto.websocket.*;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class AttendanceService {
     private final SubjectAssignmentRepository subjectAssignmentRepository;
     private final SubjectRepository subjectRepository;
     private final AttendanceSessionSectionRepository sessionSectionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // ── Start Session ──────────────────────────────────────────────────────────
     /**
@@ -100,6 +104,25 @@ public class AttendanceService {
             }
         }
 
+        // Broadcast SessionStartedEvent to each section's websocket topic
+        try {
+            List<AttendanceSessionSection> activeSections = sessionSectionRepository.findBySessionId(saved.getId());
+            for (AttendanceSessionSection ass : activeSections) {
+                Long targetSectionId = ass.getSection().getId();
+                SessionStartedEvent startedEvent = new SessionStartedEvent(
+                        saved.getId(),
+                        saved.getSubject() != null ? saved.getSubject().getName() : "General Class",
+                        saved.getSubject() != null ? saved.getSubject().getCode() : "N/A",
+                        ass.getSection().getSectionName(),
+                        saved.getSessionType().name(),
+                        saved.getStartTime()
+                );
+                messagingTemplate.convertAndSend("/topic/session/" + targetSectionId, startedEvent);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to broadcast SessionStartedEvent: " + e.getMessage());
+        }
+
         return saved;
     }
 
@@ -116,7 +139,19 @@ public class AttendanceService {
         AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
         session.endSession();   // sets status=ENDED, isActive=false, endTime=now
-        sessionRepository.save(session);
+        AttendanceSession saved = sessionRepository.save(session);
+
+        // Broadcast SessionEndedEvent to each section's websocket topic
+        try {
+            List<AttendanceSessionSection> activeSections = sessionSectionRepository.findBySessionId(saved.getId());
+            SessionEndedEvent endedEvent = new SessionEndedEvent(saved.getId());
+            for (AttendanceSessionSection ass : activeSections) {
+                Long targetSectionId = ass.getSection().getId();
+                messagingTemplate.convertAndSend("/topic/session/" + targetSectionId, endedEvent);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to broadcast SessionEndedEvent: " + e.getMessage());
+        }
     }
 
     // ── Find Active Session for Student (merged-session aware) ─────────────────
@@ -174,9 +209,25 @@ public class AttendanceService {
                 .markedAt(LocalDateTime.now())
                 .markedLatitude(latitude)
                 .markedLongitude(longitude)
+                .markedBy(MarkSource.STUDENT_TOTP)
                 .build();
 
-        attendanceRecordRepository.save(record);
+        AttendanceRecord savedRecord = attendanceRecordRepository.save(record);
+
+        // Broadcast RosterUpdateEvent to the faculty roster websocket topic
+        try {
+            RosterUpdateEvent rosterEvent = new RosterUpdateEvent(
+                    session.getId(),
+                    student.getId(),
+                    student.getName(),
+                    student.getCollegeId(),
+                    savedRecord.getMarkedAt(),
+                    savedRecord.getMarkedBy().name()
+            );
+            messagingTemplate.convertAndSend("/topic/roster/" + session.getId(), rosterEvent);
+        } catch (Exception e) {
+            System.err.println("Failed to broadcast RosterUpdateEvent: " + e.getMessage());
+        }
     }
 
     // ── Faculty: get records for a session ────────────────────────────────────
@@ -187,6 +238,164 @@ public class AttendanceService {
                         record.getStudent().getName(),
                         record.getStudent().getCollegeId(),
                         record.getMarkedAt()))
+                .collect(Collectors.toList());
+    }
+
+    // ── Faculty: manually mark students present ───────────────────────────────
+    /**
+     * Allows faculty to manually mark students present. Works during:
+     * 1. ACTIVE session (always allowed)
+     * 2. ENDED session within the grace window (default 15 minutes after end)
+     * 3. Any ENDED session if forceOverride = true (faculty flexibility)
+     *
+     * Each student marked gets MarkSource.FACULTY_MANUAL + the faculty's ID
+     * recorded for audit purposes.
+     */
+    @Transactional
+    public List<StudentAttendanceDTO> manualMarkAttendance(
+            Long sessionId, Long facultyId, List<String> studentCollegeIds,
+            String reason, boolean forceOverride) {
+
+        AttendanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Session not found"));
+
+        // Verify this faculty owns the session
+        if (!session.getFaculty().getId().equals(facultyId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can only manually mark students for your own sessions.");
+        }
+
+        // Check if manual marking is allowed
+        if (!forceOverride && !session.isManualMarkAllowed()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Manual marking window has closed (" + session.getManualMarkGraceMinutes()
+                    + " minutes after session end). Use force override if needed.");
+        }
+
+        // Even with forceOverride, CANCELLED sessions cannot be marked
+        if (session.getStatus() == SessionStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot mark attendance for a cancelled session.");
+        }
+
+        Faculty faculty = facultyRepository.findById(facultyId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Faculty not found"));
+
+        List<StudentAttendanceDTO> markedStudents = new java.util.ArrayList<>();
+
+        for (String collegeId : studentCollegeIds) {
+            Student student = studentRepository.findByCollegeId(collegeId)
+                    .orElse(null);
+            if (student == null) continue; // Skip unknown college IDs silently
+
+            // Skip if already marked
+            if (attendanceRecordRepository.existsByStudentIdAndAttendanceSessionId(
+                    student.getId(), sessionId)) {
+                continue;
+            }
+
+            AttendanceRecord record = AttendanceRecord.builder()
+                    .attendanceSession(session)
+                    .student(student)
+                    .markedAt(LocalDateTime.now())
+                    .markedBy(MarkSource.FACULTY_MANUAL)
+                    .markedByFaculty(faculty)
+                    .graceReason(reason)
+                    .build();
+
+            AttendanceRecord saved = attendanceRecordRepository.save(record);
+
+            markedStudents.add(new StudentAttendanceDTO(
+                    student.getName(), student.getCollegeId(), saved.getMarkedAt()));
+
+            // Broadcast roster update via WebSocket
+            try {
+                RosterUpdateEvent rosterEvent = new RosterUpdateEvent(
+                        session.getId(), student.getId(), student.getName(),
+                        student.getCollegeId(), saved.getMarkedAt(),
+                        MarkSource.FACULTY_MANUAL.name());
+                messagingTemplate.convertAndSend(
+                        "/topic/roster/" + session.getId(), rosterEvent);
+            } catch (Exception e) {
+                System.err.println("Failed to broadcast manual mark RosterUpdateEvent: " + e.getMessage());
+            }
+        }
+
+        return markedStudents;
+    }
+
+    // ── Faculty: get absent students for a session ────────────────────────────
+    /**
+     * Returns all students in the session's sections who have NOT yet
+     * marked attendance. Works for both REGULAR and MERGED sessions.
+     */
+    public List<Map<String, Object>> getAbsentStudentsForSession(Long sessionId) {
+        AttendanceSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Session not found"));
+
+        // Collect all section IDs (primary + merged)
+        List<Long> sectionIds = new java.util.ArrayList<>();
+        sectionIds.add(session.getSection().getId());
+        List<AttendanceSessionSection> sessionSections =
+                sessionSectionRepository.findBySessionId(sessionId);
+        for (AttendanceSessionSection ass : sessionSections) {
+            Long secId = ass.getSection().getId();
+            if (!sectionIds.contains(secId)) {
+                sectionIds.add(secId);
+            }
+        }
+
+        // Get all students in those sections
+        List<Student> allStudents = new java.util.ArrayList<>();
+        for (Long secId : sectionIds) {
+            allStudents.addAll(studentRepository.findBySectionId(secId));
+        }
+
+        // Get IDs of students who already marked
+        java.util.Set<Long> markedStudentIds = attendanceRecordRepository
+                .findByAttendanceSessionId(sessionId)
+                .stream()
+                .map(r -> r.getStudent().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Filter to absent only
+        return allStudents.stream()
+                .filter(s -> !markedStudentIds.contains(s.getId()))
+                .map(s -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("collegeId", s.getCollegeId());
+                    m.put("name", s.getName());
+                    m.put("rollNumber", s.getRollNumber());
+                    m.put("sectionName", s.getSection() != null ? s.getSection().getSectionName() : "N/A");
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ── Faculty: get session history (recent sessions) ────────────────────────
+    public List<Map<String, Object>> getFacultySessionHistory(Long facultyId) {
+        return sessionRepository.findByFacultyIdOrderByStartTimeDesc(facultyId)
+                .stream()
+                .limit(20) // Last 20 sessions
+                .map(s -> {
+                    long presentCount = attendanceRecordRepository
+                            .findByAttendanceSessionId(s.getId()).size();
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("sessionId", s.getId());
+                    m.put("sectionName", s.getSection().getSectionName());
+                    m.put("subjectName", s.getSubject() != null ? s.getSubject().getName() : "General");
+                    m.put("subjectCode", s.getSubject() != null ? s.getSubject().getCode() : "N/A");
+                    m.put("sessionType", s.getSessionType().name());
+                    m.put("status", s.getStatus().name());
+                    m.put("startTime", s.getStartTime().toString());
+                    m.put("endTime", s.getEndTime() != null ? s.getEndTime().toString() : null);
+                    m.put("presentCount", presentCount);
+                    m.put("manualMarkAllowed", s.isManualMarkAllowed());
+                    return m;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -211,14 +420,14 @@ public class AttendanceService {
 
         return assignments.stream().map(assignment -> {
             Long subjectId = assignment.getSubject().getId();
-            Long facultyId = assignment.getFaculty().getId();
+            Long fId = assignment.getFaculty().getId();
 
             // DENOMINATOR: sessions tagged with this exact subject for this section
             long taggedSessions = sessionRepository.countBySubjectIdAndSectionId(subjectId, sectionId);
 
             // FALLBACK: old sessions by this faculty with no subject tag (legacy data)
             long untaggedSessions = sessionRepository
-                    .countUntaggedByFacultyIdAndSectionId(facultyId, sectionId);
+                    .countUntaggedByFacultyIdAndSectionId(fId, sectionId);
 
             long totalConducted = taggedSessions + untaggedSessions;
 
@@ -228,7 +437,7 @@ public class AttendanceService {
 
             // NUMERATOR attended for legacy untagged sessions
             long untaggedAttended = attendanceRecordRepository
-                    .countUntaggedByStudentIdAndFacultyIdAndSectionId(studentId, facultyId, sectionId);
+                    .countUntaggedByStudentIdAndFacultyIdAndSectionId(studentId, fId, sectionId);
 
             long attended = taggedAttended + untaggedAttended;
 

@@ -5,6 +5,7 @@ import com.ucmp.ucmp_backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,6 +15,9 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 //    Optional<Student> findByProfile_ProfileId(Long profileId);
     Optional<Student> findByRollNumber(String rollNumber);
     Optional<Student> findByUser(User user);
+
+    // All students enrolled in a specific section (for absent roster)
+    List<Student> findBySectionId(Long sectionId);
 }
 
 

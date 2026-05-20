@@ -11,7 +11,12 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.ucmp.ucmp_backend.dto.websocket.ClassCancelledEvent;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +28,8 @@ public class TimetableService {
     private final SectionRepository sectionRepo;
     private final FacultyRepository facultyRepo;
     private final SubjectAssignmentRepository assignmentRepo;
+    private final ClassCancellationRepository cancellationRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // ─────────────────────────────────────────────────────────────────────
     // CONFLICT VALIDATION — runs BEFORE any save
@@ -303,5 +310,54 @@ public class TimetableService {
                 .academicTerm(e.getAcademicTerm())
                 .entryType(e.getEntryType())
                 .build();
+    }
+
+    @Transactional
+    public ClassCancellation cancelEntry(Long entryId, LocalDate date, String reason, String facultyCollegeId) {
+        TimetableEntry entry = timetableRepo.findById(entryId)
+                .orElseThrow(() -> new IllegalArgumentException("Timetable entry not found"));
+
+        Faculty faculty = facultyRepo.findByCollegeId(facultyCollegeId)
+                .orElseThrow(() -> new IllegalArgumentException("Faculty not found"));
+
+        // Validate that this faculty is indeed assigned to this timetable entry
+        if (!entry.getFaculty().getId().equals(faculty.getId())) {
+            throw new IllegalStateException("You can only cancel classes assigned to you.");
+        }
+
+        // Check if already cancelled
+        Optional<ClassCancellation> existing = cancellationRepo
+                .findByTimetableEntryIdAndCancellationDate(entryId, date);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        ClassCancellation cancellation = ClassCancellation.builder()
+                .timetableEntry(entry)
+                .cancellationDate(date)
+                .cancelledBy(faculty)
+                .reason(reason)
+                .approvalStatus(CancellationStatus.AUTO_APPROVED)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+
+        ClassCancellation saved = cancellationRepo.save(cancellation);
+
+        // Push WebSocket update
+        try {
+            ClassCancelledEvent event = new ClassCancelledEvent(
+                    entry.getId(),
+                    entry.getSubject().getName(),
+                    entry.getSubject().getCode(),
+                    date,
+                    entry.getStartTime() + " - " + entry.getEndTime(),
+                    reason
+            );
+            messagingTemplate.convertAndSend("/topic/cancellation/" + entry.getSection().getId(), event);
+        } catch (Exception e) {
+            System.err.println("Failed to broadcast ClassCancelledEvent: " + e.getMessage());
+        }
+
+        return saved;
     }
 }
