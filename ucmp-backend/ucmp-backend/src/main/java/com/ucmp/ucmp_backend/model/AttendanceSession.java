@@ -21,6 +21,10 @@ public class AttendanceSession {
     @JoinColumn(name = "faculty_id", nullable = false)
     private Faculty faculty;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scheduled_faculty_id", nullable = true)
+    private Faculty scheduledFaculty;
+
     // ── PRIMARY section (always set; for MERGED sessions this is the faculty's OWN section)
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

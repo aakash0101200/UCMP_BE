@@ -47,4 +47,22 @@ public class TimetableEntryResponseDTO {
     // META
     private String academicTerm;
     private EntryType entryType;
+
+    // AOCS RESOLVED STATE FIELDS
+    private java.time.LocalDate resolvedDate;
+    private boolean isOverride;
+    private String overrideType;
+    private boolean isCancelled;
+    private boolean isSubstituted;
+    private boolean isRoomChanged;
+    private boolean isTimeChanged;
+    private String originalFacultyName;
+    private String originalRoomName;
+    private String newFacultyName;
+    private String newRoomName;
+    private Long overrideId;
+    private String overrideReason;
+    private java.util.List<Long> appliedOverrideIds;
+    private java.util.List<Long> mergedSectionIds;
+    private java.util.List<String> mergedSectionNames;
 }

@@ -33,6 +33,16 @@ public class SchemaMigrationRunner {
             jdbcTemplate.execute("ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS marked_by_faculty_id BIGINT"); // Foreign keys auto-handled by Hibernate later
             jdbcTemplate.execute("ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS grace_reason VARCHAR(255)");
 
+            // 3. Update Announcements
+            jdbcTemplate.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS section_id BIGINT");
+            jdbcTemplate.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS student_college_id VARCHAR(50)");
+
+            // 4. Update Timetable Overrides (AOCS Recurrence Support)
+            jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS effective_from DATE");
+            jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS effective_to DATE");
+            jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN NOT NULL DEFAULT FALSE");
+            jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS recurring_pattern VARCHAR(100)");
+
             log.info("====== DB MIGRATION SUCCESSFUL! ======");
         } catch (Exception e) {
             log.warn("Migration notice (safe to ignore if columns already exist): {}", e.getMessage());

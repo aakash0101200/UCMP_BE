@@ -12,7 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.ucmp.ucmp_backend.dto.TimetableEntryResponseDTO;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +36,8 @@ public class AttendanceService {
     private final SubjectRepository subjectRepository;
     private final AttendanceSessionSectionRepository sessionSectionRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AnnouncementRepository announcementRepository;
+    private final TimetableResolutionService resolutionService;
 
     // ── Start Session ──────────────────────────────────────────────────────────
     /**
@@ -44,6 +48,7 @@ public class AttendanceService {
     @Transactional
     public AttendanceSession startSession(Long facultyId, Long sectionId, Long subjectId,
                                           List<Long> mergedSectionIds,
+                                          Long scheduledFacultyId,
                                           Double latitude, Double longitude,
                                           Double radiusInMeters) {
         Faculty faculty = facultyRepository.findById(facultyId)
@@ -56,6 +61,28 @@ public class AttendanceService {
                 ? subjectRepository.findById(subjectId).orElse(null)
                 : null;
 
+        // Resolve scheduled faculty (for AOCS audit trail)
+        Faculty scheduledFaculty = null;
+        if (scheduledFacultyId != null) {
+            scheduledFaculty = facultyRepository.findById(scheduledFacultyId).orElse(null);
+        } else if (subjectId != null) {
+            try {
+                LocalDate today = LocalDate.now();
+                // Check section's schedule for today to resolve who was scheduled
+                List<TimetableEntryResponseDTO> dailySchedule = resolutionService.getResolvedScheduleForSection(sectionId, today, "2026-27-ODD");
+                for (TimetableEntryResponseDTO slot : dailySchedule) {
+                    if (slot.getSubjectId() != null && slot.getSubjectId().equals(subjectId)) {
+                        if (slot.getFacultyId() != null) {
+                            scheduledFaculty = facultyRepository.findById(slot.getFacultyId()).orElse(null);
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Keep scheduledFaculty as null on failure
+            }
+        }
+
         // Determine session type
         boolean isMerged = mergedSectionIds != null && !mergedSectionIds.isEmpty();
         SessionType sessionType = isMerged ? SessionType.MERGED : SessionType.REGULAR;
@@ -67,6 +94,7 @@ public class AttendanceService {
         // Build and save the new session
         AttendanceSession newSession = AttendanceSession.builder()
                 .faculty(faculty)
+                .scheduledFaculty(scheduledFaculty)
                 .section(primarySection)
                 .subject(subject)
                 .sessionType(sessionType)
@@ -118,6 +146,26 @@ public class AttendanceService {
                         saved.getStartTime()
                 );
                 messagingTemplate.convertAndSend("/topic/session/" + targetSectionId, startedEvent);
+
+                // Create persistent section announcement for offline/history retrieval
+                try {
+                    Announcements attendanceAnnouncement = new Announcements();
+                    attendanceAnnouncement.setTitle("Attendance Session Started: " + (saved.getSubject() != null ? saved.getSubject().getName() : "General Class"));
+                    attendanceAnnouncement.setDescription(String.format("Attendance marking is active for %s. Code: active", 
+                            saved.getSubject() != null ? saved.getSubject().getName() : "General Class"));
+                    attendanceAnnouncement.setAuthor(faculty.getUser() != null ? faculty.getUser().getName() : "Faculty");
+                    attendanceAnnouncement.setTime(saved.getStartTime().toString());
+                    attendanceAnnouncement.setType("ATTENDANCE_SESSION");
+                    attendanceAnnouncement.setSectionId(targetSectionId);
+                    attendanceAnnouncement.setCompleted(false);
+
+                    announcementRepository.save(attendanceAnnouncement);
+
+                    // Broadcast to notifications channel
+                    messagingTemplate.convertAndSend("/topic/notifications/section/" + targetSectionId, attendanceAnnouncement);
+                } catch (Exception ex) {
+                    System.err.println("Failed to create attendance session announcement: " + ex.getMessage());
+                }
             }
         } catch (Exception e) {
             System.err.println("Failed to broadcast SessionStartedEvent: " + e.getMessage());
@@ -151,6 +199,55 @@ public class AttendanceService {
             }
         } catch (Exception e) {
             System.err.println("Failed to broadcast SessionEndedEvent: " + e.getMessage());
+        }
+
+        // Low attendance check
+        if (saved.getSubject() != null) {
+            try {
+                Long subjectId = saved.getSubject().getId();
+                Long fId = saved.getFaculty().getId();
+                List<AttendanceSessionSection> activeSections = sessionSectionRepository.findBySessionId(saved.getId());
+                for (AttendanceSessionSection ass : activeSections) {
+                    Long sectionId = ass.getSection().getId();
+                    List<Student> students = studentRepository.findBySectionId(sectionId);
+                    
+                    // Denominator classes conducted for this section & subject
+                    long taggedSessions = sessionRepository.countBySubjectIdAndSectionId(subjectId, sectionId);
+                    long untaggedSessions = sessionRepository.countUntaggedByFacultyIdAndSectionId(fId, sectionId);
+                    long totalConducted = taggedSessions + untaggedSessions;
+
+                    if (totalConducted > 0) {
+                        for (Student student : students) {
+                            Long studentId = student.getId();
+                            long taggedAttended = attendanceRecordRepository.countByStudentIdAndSubjectIdAndSectionId(studentId, subjectId, sectionId);
+                            long untaggedAttended = attendanceRecordRepository.countUntaggedByStudentIdAndFacultyIdAndSectionId(studentId, fId, sectionId);
+                            long attended = taggedAttended + untaggedAttended;
+
+                            double percentage = Math.round((attended * 100.0 / totalConducted) * 100.0) / 100.0;
+                            if (percentage < 75.0) {
+                                // Save and broadcast personalized low-attendance warning
+                                Announcements warning = new Announcements();
+                                warning.setTitle("Low Attendance Warning: " + saved.getSubject().getName());
+                                warning.setDescription(String.format("Your attendance in %s is %.2f%%, which is below the required 75%% threshold. (Attended: %d/%d classes)", 
+                                        saved.getSubject().getName(), percentage, attended, totalConducted));
+                                warning.setAuthor("System");
+                                warning.setTime(java.time.LocalDateTime.now().toString());
+                                warning.setType("ATTENDANCE_WARNING");
+                                warning.setStudentCollegeId(student.getCollegeId());
+                                warning.setSectionId(sectionId);
+                                warning.setCompleted(false);
+
+                                announcementRepository.save(warning);
+
+                                // Broadcast to the specific student WebSocket destination
+                                messagingTemplate.convertAndSend("/topic/notifications/student/" + student.getCollegeId(), warning);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to perform low attendance warning checks: " + e.getMessage());
+            }
         }
     }
 

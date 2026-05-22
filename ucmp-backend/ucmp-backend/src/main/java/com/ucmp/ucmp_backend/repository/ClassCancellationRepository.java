@@ -56,4 +56,11 @@ public interface ClassCancellationRepository extends JpaRepository<ClassCancella
             @Param("facultyId") Long facultyId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
+
+    @Query("""
+        SELECT COUNT(cc) FROM ClassCancellation cc
+        WHERE cc.cancellationDate = :date
+        AND cc.approvalStatus IN ('AUTO_APPROVED', 'APPROVED')
+    """)
+    long countEffectiveCancellationsByDate(@Param("date") LocalDate date);
 }

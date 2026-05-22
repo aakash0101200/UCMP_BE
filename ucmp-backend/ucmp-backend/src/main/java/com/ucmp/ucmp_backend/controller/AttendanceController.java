@@ -45,6 +45,7 @@ public class AttendanceController {
                 request.getSectionId(),
                 request.getSubjectId(),
                 request.getMergedSectionIds(),    // null for REGULAR, list for MERGED
+                request.getScheduledFacultyId(),
                 request.getLatitude(),
                 request.getLongitude(),
                 request.getRadiusInMeters());

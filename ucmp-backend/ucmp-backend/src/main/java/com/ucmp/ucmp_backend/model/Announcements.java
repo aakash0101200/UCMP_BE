@@ -24,6 +24,12 @@ public class Announcements {
     private String author;
     private String type;
     private boolean isCompleted;
+    
+    @Column(name = "section_id")
+    private Long sectionId;
+
+    @Column(name = "student_college_id")
+    private String studentCollegeId;
 
 
 
@@ -89,6 +95,22 @@ public class Announcements {
 
     public void setCompleted(boolean completed) {
         isCompleted = completed;
+    }
+
+    public Long getSectionId() {
+        return sectionId;
+    }
+
+    public void setSectionId(Long sectionId) {
+        this.sectionId = sectionId;
+    }
+
+    public String getStudentCollegeId() {
+        return studentCollegeId;
+    }
+
+    public void setStudentCollegeId(String studentCollegeId) {
+        this.studentCollegeId = studentCollegeId;
     }
 
 

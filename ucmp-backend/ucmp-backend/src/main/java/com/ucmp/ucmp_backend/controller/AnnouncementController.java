@@ -25,6 +25,16 @@ public class AnnouncementController {
             return service.getAll();
         }
 
+        @GetMapping("/section/{sectionId}")
+        public List<Announcements> getBySection(@PathVariable Long sectionId) {
+            return service.getAnnouncementsForStudent(sectionId);
+        }
+
+        @GetMapping("/student/{collegeId}/section/{sectionId}")
+        public List<Announcements> getForStudent(@PathVariable String collegeId, @PathVariable Long sectionId) {
+            return service.getAnnouncementsForStudent(sectionId, collegeId);
+        }
+
         @PostMapping("/add")
         public Announcements create(@RequestBody Announcements a){
             

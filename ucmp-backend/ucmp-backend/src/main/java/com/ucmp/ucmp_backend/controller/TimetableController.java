@@ -18,6 +18,7 @@ import java.util.List;
 public class TimetableController {
 
     private final TimetableService timetableService;
+    private final com.ucmp.ucmp_backend.service.TimetableResolutionService resolutionService;
 
     // ─── Student / Faculty READ endpoints ─────────────────────────────────
 
@@ -206,5 +207,71 @@ public class TimetableController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // AOCS: Resolved Schedules
+    @GetMapping("/section/{sectionId}/resolved")
+    public ResponseEntity<List<TimetableEntryResponseDTO>> getResolvedSectionSchedule(
+            @PathVariable Long sectionId,
+            @RequestParam String date,
+            @RequestParam String term) {
+        return ResponseEntity.ok(resolutionService.getResolvedScheduleForSection(sectionId, java.time.LocalDate.parse(date), term));
+    }
+
+    @GetMapping("/faculty/{facultyId}/resolved")
+    public ResponseEntity<List<TimetableEntryResponseDTO>> getResolvedFacultySchedule(
+            @PathVariable Long facultyId,
+            @RequestParam String date,
+            @RequestParam String term) {
+        return ResponseEntity.ok(resolutionService.getResolvedScheduleForFaculty(facultyId, java.time.LocalDate.parse(date), term));
+    }
+
+    // AOCS: Live Availability
+    @GetMapping("/availability")
+    public ResponseEntity<List<FacultyAvailabilityResponse>> getFacultyAvailability(
+            @RequestParam String date,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam String term) {
+        return ResponseEntity.ok(timetableService.getFacultyAvailability(
+                java.time.LocalDate.parse(date),
+                java.time.LocalTime.parse(startTime),
+                java.time.LocalTime.parse(endTime),
+                subjectId,
+                term));
+    }
+
+    // AOCS: Overrides CRUD
+    @PostMapping("/override")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<?> createOverride(@RequestBody TimetableOverrideRequestDTO dto) {
+        try {
+            return ResponseEntity.ok(timetableService.createOverride(dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/override/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<?> cancelOverride(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(timetableService.cancelOverride(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // AOCS: Operational Metrics
+    @GetMapping("/metrics")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<AocsMetricsResponse> getAocsMetrics(@RequestParam String term) {
+        return ResponseEntity.ok(timetableService.getAocsMetrics(term));
+    }
+
+    @GetMapping("/terms")
+    public ResponseEntity<List<String>> getAcademicTerms() {
+        return ResponseEntity.ok(timetableService.getDistinctAcademicTerms());
     }
 }

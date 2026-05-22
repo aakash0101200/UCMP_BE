@@ -58,4 +58,16 @@ public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, 
 
     // Count how many slots a faculty has in a term (for overload detection)
     long countByFacultyIdAndAcademicTerm(Long facultyId, String academicTerm);
+
+    // Count template entries happening right now (for live lectures metric)
+    @Query("SELECT COUNT(e) FROM TimetableEntry e WHERE e.day = :day AND e.academicTerm = :term AND e.startTime <= :now AND e.endTime > :now")
+    long countOngoingByDayAndTime(@Param("day") DayOfWeek day, @Param("term") String term, @Param("now") LocalTime now);
+
+    // Count distinct faculties who have at least one class on a given day in a term
+    @Query("SELECT COUNT(DISTINCT e.faculty.id) FROM TimetableEntry e WHERE e.day = :day AND e.academicTerm = :term")
+    long countDistinctFacultiesWithClassOnDay(@Param("day") DayOfWeek day, @Param("term") String term);
+
+    // Get all distinct academic terms from timetable entries
+    @Query("SELECT DISTINCT e.academicTerm FROM TimetableEntry e ORDER BY e.academicTerm DESC")
+    List<String> findDistinctAcademicTerms();
 }
