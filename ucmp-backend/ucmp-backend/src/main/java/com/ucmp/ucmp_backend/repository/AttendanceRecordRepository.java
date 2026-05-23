@@ -2,6 +2,7 @@ package com.ucmp.ucmp_backend.repository;
 
 import com.ucmp.ucmp_backend.model.AttendanceRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,6 +11,14 @@ import java.util.List;
 
 @Repository
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
+
+    void deleteByStudentId(Long studentId);
+
+    void deleteByAttendanceSessionId(Long sessionId);
+
+    @Modifying
+    @Query("UPDATE AttendanceRecord r SET r.markedByFaculty = null WHERE r.markedByFaculty.id = :facultyId")
+    void nullifyFacultyReferences(@Param("facultyId") Long facultyId);
 
     boolean existsByStudentIdAndAttendanceSessionId(Long studentId, Long sessionId);
 

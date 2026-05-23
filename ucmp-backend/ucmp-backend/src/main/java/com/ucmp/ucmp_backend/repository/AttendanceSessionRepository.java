@@ -3,6 +3,7 @@ package com.ucmp.ucmp_backend.repository;
 import com.ucmp.ucmp_backend.model.AttendanceSession;
 import com.ucmp.ucmp_backend.model.SessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,6 +13,12 @@ import java.util.Optional;
 
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
+
+    List<AttendanceSession> findByFacultyId(Long facultyId);
+
+    @Modifying
+    @Query("UPDATE AttendanceSession s SET s.scheduledFaculty = null WHERE s.scheduledFaculty.id = :facultyId")
+    void nullifyScheduledFacultyReferences(@Param("facultyId") Long facultyId);
 
     // ── Legacy isActive-based finders (kept for backward compat) ──────────────
     List<AttendanceSession> findByFacultyIdAndIsActiveTrue(Long facultyId);

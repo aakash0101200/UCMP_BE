@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -19,4 +21,5 @@ public class AdminUserDTO {
     private String sectionName; // for student
     private String year; // for student
     private String rollNumber; // for student
+    private List<Long> sectionIds; // for faculty/student sections
 }

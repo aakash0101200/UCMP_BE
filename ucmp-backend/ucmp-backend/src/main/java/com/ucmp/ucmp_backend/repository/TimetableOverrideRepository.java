@@ -2,6 +2,7 @@ package com.ucmp.ucmp_backend.repository;
 
 import com.ucmp.ucmp_backend.model.TimetableOverride;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,18 @@ import java.util.List;
 
 @Repository
 public interface TimetableOverrideRepository extends JpaRepository<TimetableOverride, Long> {
+
+    @Modifying
+    @Query("UPDATE TimetableOverride o SET o.originalFaculty = null WHERE o.originalFaculty.id = :facultyId")
+    void nullifyOriginalFacultyReferences(@Param("facultyId") Long facultyId);
+
+    @Modifying
+    @Query("UPDATE TimetableOverride o SET o.newFaculty = null WHERE o.newFaculty.id = :facultyId")
+    void nullifyNewFacultyReferences(@Param("facultyId") Long facultyId);
+
+    @Modifying
+    @Query("UPDATE TimetableOverride o SET o.timetableEntry = null WHERE o.timetableEntry.id = :entryId")
+    void nullifyTimetableEntryReferences(@Param("entryId") Long entryId);
 
     @Query("SELECT o FROM TimetableOverride o WHERE o.status IN (com.ucmp.ucmp_backend.model.OverrideStatus.ACTIVE, com.ucmp.ucmp_backend.model.OverrideStatus.CONFIRMED, com.ucmp.ucmp_backend.model.OverrideStatus.COMPLETED) AND ((o.isRecurring = false AND o.overrideDate = :date) OR (o.isRecurring = true AND o.effectiveFrom <= :date AND (o.effectiveTo IS NULL OR o.effectiveTo >= :date)))")
     List<TimetableOverride> findActiveOverridesByDate(@Param("date") LocalDate date);

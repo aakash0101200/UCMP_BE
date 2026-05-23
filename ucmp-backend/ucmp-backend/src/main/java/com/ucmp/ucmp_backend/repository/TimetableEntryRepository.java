@@ -13,6 +13,8 @@ import java.util.List;
 @Repository
 public interface TimetableEntryRepository extends JpaRepository<TimetableEntry, Long> {
 
+    List<TimetableEntry> findByFacultyId(Long facultyId);
+
     // --- Student / Section views ---
     List<TimetableEntry> findBySectionIdAndAcademicTermOrderByDayAscStartTimeAsc(
         Long sectionId, String academicTerm

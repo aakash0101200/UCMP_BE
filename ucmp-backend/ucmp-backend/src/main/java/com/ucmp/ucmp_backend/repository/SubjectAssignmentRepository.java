@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface SubjectAssignmentRepository extends JpaRepository<SubjectAssignment, Long> {
 
+    void deleteByFacultyId(Long facultyId);
+
     // Get all assignments for a term — main input to the auto-generator
     List<SubjectAssignment> findByAcademicTerm(String academicTerm);
 

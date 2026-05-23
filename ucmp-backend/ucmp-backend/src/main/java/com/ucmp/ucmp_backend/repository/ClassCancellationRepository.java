@@ -3,6 +3,7 @@ package com.ucmp.ucmp_backend.repository;
 import com.ucmp.ucmp_backend.model.ClassCancellation;
 import com.ucmp.ucmp_backend.model.CancellationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,14 @@ import java.util.Optional;
 
 @Repository
 public interface ClassCancellationRepository extends JpaRepository<ClassCancellation, Long> {
+
+    void deleteByCancelledById(Long facultyId);
+
+    void deleteByTimetableEntryId(Long entryId);
+
+    @Modifying
+    @Query("UPDATE ClassCancellation c SET c.reviewedBy = null WHERE c.reviewedBy.id = :facultyId")
+    void nullifyReviewedByReferences(@Param("facultyId") Long facultyId);
 
     // Check if a specific timetable slot is cancelled on a given date
     Optional<ClassCancellation> findByTimetableEntryIdAndCancellationDate(
