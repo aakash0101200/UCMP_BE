@@ -43,6 +43,10 @@ public class SchemaMigrationRunner {
             jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN NOT NULL DEFAULT FALSE");
             jdbcTemplate.execute("ALTER TABLE timetable_overrides ADD COLUMN IF NOT EXISTS recurring_pattern VARCHAR(100)");
 
+            // 5. Update Users (Year Scope) and Sections (Year)
+            jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS year_scope INT");
+            jdbcTemplate.execute("ALTER TABLE sections ADD COLUMN IF NOT EXISTS year INT DEFAULT 3");
+
             log.info("====== DB MIGRATION SUCCESSFUL! ======");
         } catch (Exception e) {
             log.warn("Migration notice (safe to ignore if columns already exist): {}", e.getMessage());

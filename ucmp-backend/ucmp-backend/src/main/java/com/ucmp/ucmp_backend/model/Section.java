@@ -19,6 +19,9 @@ public class Section {
 
     private String sectionName;
 
+    @Column(name = "year")
+    private Integer year;
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "batch_id", nullable = false)
@@ -45,6 +48,8 @@ public class Section {
     public void setId(Long id) { this.id = id;}
     public String getSectionName() { return sectionName;}
     public void setSectionName(String sectionName) { this.sectionName = sectionName;}
+    public Integer getYear() { return year; }
+    public void setYear(Integer year) { this.year = year; }
     public Batch getBatch() { return batch;}
     public  void setBatch(Batch batch) { this.batch = batch;}
     public Set<Student> getStudents() { return students;}

@@ -9,5 +9,6 @@ import java.time.LocalDateTime;
 public class StudentAttendanceDTO {
     private String name;
     private String collegeId;
+    private String rollNumber;
     private LocalDateTime markedAt;
 }

@@ -7,6 +7,7 @@ public record RosterUpdateEvent(
     Long studentId,
     String studentName,
     String collegeId,
+    String rollNumber,
     LocalDateTime markedAt,
     String markSource
 ) {}

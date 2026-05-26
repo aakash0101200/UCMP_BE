@@ -50,7 +50,8 @@ public class AttendanceService {
                                           List<Long> mergedSectionIds,
                                           Long scheduledFacultyId,
                                           Double latitude, Double longitude,
-                                          Double radiusInMeters) {
+                                          Double radiusInMeters,
+                                          Integer durationInMinutes) {
         Faculty faculty = facultyRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
         Section primarySection = sectionRepository.findById(sectionId)
@@ -87,6 +88,23 @@ public class AttendanceService {
         boolean isMerged = mergedSectionIds != null && !mergedSectionIds.isEmpty();
         SessionType sessionType = isMerged ? SessionType.MERGED : SessionType.REGULAR;
 
+        int sessionDuration = durationInMinutes != null ? durationInMinutes : 40;
+
+        // Idempotency check: if there's an active session for the same faculty, section, and subject
+        // and it was started within the chosen duration, return it.
+        if (subjectId != null) {
+            Optional<AttendanceSession> existingOpt = sessionRepository.findByFacultyIdAndIsActiveTrue(facultyId)
+                    .stream()
+                    .filter(s -> s.getSection().getId().equals(sectionId)
+                            && s.getSubject() != null
+                            && s.getSubject().getId().equals(subjectId)
+                            && s.getStartTime().isAfter(LocalDateTime.now().minusMinutes(s.getDurationInMinutes() != null ? s.getDurationInMinutes() : 40)))
+                    .findFirst();
+            if (existingOpt.isPresent()) {
+                return existingOpt.get();
+            }
+        }
+
         // End any existing active sessions for this faculty (keep isActive in sync)
         sessionRepository.findByFacultyIdAndIsActiveTrue(facultyId)
                 .forEach(s -> { s.endSession(); sessionRepository.save(s); });
@@ -105,6 +123,7 @@ public class AttendanceService {
                 .radiusInMeters(radiusInMeters != null ? radiusInMeters : 50.0)
                 .secretSeed(UUID.randomUUID().toString())
                 .startTime(LocalDateTime.now())
+                .durationInMinutes(sessionDuration)
                 .build();
 
         AttendanceSession saved = sessionRepository.save(newSession);
@@ -252,15 +271,49 @@ public class AttendanceService {
     }
 
     // ── Find Active Session for Student (merged-session aware) ─────────────────
+    @Transactional
     public Optional<AttendanceSession> findActiveSessionForStudent(String collegeId) {
         Student student = studentRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         if (student.getSection() == null) return Optional.empty();
 
-        // findActiveSessionForSection checks BOTH primary section field AND the
-        // AttendanceSessionSection join table — so merged sessions are found too.
-        return sessionRepository.findActiveSessionForSection(student.getSection().getId());
+        Optional<AttendanceSession> sessionOpt = sessionRepository.findActiveSessionForSection(student.getSection().getId());
+        if (sessionOpt.isPresent()) {
+            AttendanceSession session = sessionOpt.get();
+            // Lazy TTL expiration check
+            int duration = session.getDurationInMinutes() != null ? session.getDurationInMinutes() : 40;
+            if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
+                session.endSession();
+                sessionRepository.save(session);
+                return Optional.empty();
+            }
+            return Optional.of(session);
+        }
+        return Optional.empty();
+    }
+
+    // ── Find Active Session for Faculty (with Lazy TTL cleanup) ────────────────
+    @Transactional
+    public Optional<AttendanceSession> findActiveSessionForFaculty(String collegeId) {
+        Faculty faculty = facultyRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+
+        List<AttendanceSession> activeSessions = sessionRepository.findByFacultyIdAndIsActiveTrue(faculty.getId());
+        AttendanceSession validSession = null;
+        
+        for (AttendanceSession session : activeSessions) {
+            // Lazy TTL expiration check
+            int duration = session.getDurationInMinutes() != null ? session.getDurationInMinutes() : 40;
+            if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
+                session.endSession();
+                sessionRepository.save(session);
+            } else {
+                validSession = session;
+            }
+        }
+        
+        return Optional.ofNullable(validSession);
     }
 
     // ── Mark Attendance ────────────────────────────────────────────────────────
@@ -318,6 +371,7 @@ public class AttendanceService {
                     student.getId(),
                     student.getName(),
                     student.getCollegeId(),
+                    student.getRollNumber(),
                     savedRecord.getMarkedAt(),
                     savedRecord.getMarkedBy().name()
             );
@@ -334,6 +388,7 @@ public class AttendanceService {
                 .map(record -> new StudentAttendanceDTO(
                         record.getStudent().getName(),
                         record.getStudent().getCollegeId(),
+                        record.getStudent().getRollNumber(),
                         record.getMarkedAt()))
                 .collect(Collectors.toList());
     }
@@ -405,13 +460,13 @@ public class AttendanceService {
             AttendanceRecord saved = attendanceRecordRepository.save(record);
 
             markedStudents.add(new StudentAttendanceDTO(
-                    student.getName(), student.getCollegeId(), saved.getMarkedAt()));
+                    student.getName(), student.getCollegeId(), student.getRollNumber(), saved.getMarkedAt()));
 
             // Broadcast roster update via WebSocket
             try {
                 RosterUpdateEvent rosterEvent = new RosterUpdateEvent(
                         session.getId(), student.getId(), student.getName(),
-                        student.getCollegeId(), saved.getMarkedAt(),
+                        student.getCollegeId(), student.getRollNumber(), saved.getMarkedAt(),
                         MarkSource.FACULTY_MANUAL.name());
                 messagingTemplate.convertAndSend(
                         "/topic/roster/" + session.getId(), rosterEvent);

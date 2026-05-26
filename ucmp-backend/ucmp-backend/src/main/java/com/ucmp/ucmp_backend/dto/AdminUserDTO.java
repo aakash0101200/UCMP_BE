@@ -17,9 +17,11 @@ public class AdminUserDTO {
     private String email;
     private String role; // "ADMIN", "FACULTY", "STUDENT"
     private String department; // for faculty
+    private Integer yearScope; // for admin
     private String branch; // for student (batchName)
     private String sectionName; // for student
     private String year; // for student
     private String rollNumber; // for student
     private List<Long> sectionIds; // for faculty/student sections
+    private String designation; // for faculty
 }

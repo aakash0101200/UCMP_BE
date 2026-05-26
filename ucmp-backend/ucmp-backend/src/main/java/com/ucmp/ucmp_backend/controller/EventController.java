@@ -17,25 +17,25 @@ public class EventController {
     @Autowired
     EventRepository eventRepo;
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @PostMapping
     public ResponseEntity<Event> createEvent(@RequestBody Event event) {
         return ResponseEntity.ok(eventRepo.save(event));
     }
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @GetMapping
     public ResponseEntity<List<Event>> findAllEvents() {
         return ResponseEntity.ok(eventRepo.findAll());
     }
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @GetMapping("/by-date")
     public ResponseEntity<List<Event>> findEventsByDate(@RequestParam("date") LocalDate date) {
         return ResponseEntity.ok(eventRepo.findByDate(date));
     }
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @GetMapping("/monthly")
     public ResponseEntity<List<Event>> findEventsByMonth(
             @RequestParam("year") int year, 
@@ -45,7 +45,7 @@ public class EventController {
         return ResponseEntity.ok(eventRepo.findByDateBetween(startDate, endDate));
     }
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Event> updateEvent(@PathVariable("id") Long id, @RequestBody Event updateEvent) {
         return eventRepo.findById(id)
@@ -58,7 +58,7 @@ public class EventController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable("id") Long id) {
         eventRepo.deleteById(id);

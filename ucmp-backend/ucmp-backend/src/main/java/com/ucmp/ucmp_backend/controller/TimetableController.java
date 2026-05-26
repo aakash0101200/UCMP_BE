@@ -1,8 +1,10 @@
 package com.ucmp.ucmp_backend.controller;
 
+import com.ucmp.ucmp_backend.model.*;
+import com.ucmp.ucmp_backend.repository.*;
 import com.ucmp.ucmp_backend.dto.*;
-import com.ucmp.ucmp_backend.model.SubjectAssignment;
 import com.ucmp.ucmp_backend.service.TimetableService;
+import com.ucmp.ucmp_backend.validator.AdminScopeValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,23 @@ public class TimetableController {
 
     private final TimetableService timetableService;
     private final com.ucmp.ucmp_backend.service.TimetableResolutionService resolutionService;
+    private final UserRepository userRepository;
+    private final SectionRepository sectionRepository;
+    private final TimetableEntryRepository timetableEntryRepository;
+    private final SubjectAssignmentRepository subjectAssignmentRepository;
+    private final TimetableOverrideRepository overrideRepository;
+    private final AdminScopeValidator adminScopeValidator;
+
+    private String enforceAdminRoleAndDepartment(Authentication authentication) {
+        String collegeId = authentication.getName();
+        User adminUser = userRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
+        
+        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
+            return "ALL";
+        }
+        return adminUser.getDepartment();
+    }
 
     // ─── Student / Faculty READ endpoints ─────────────────────────────────
 
@@ -61,12 +80,14 @@ public class TimetableController {
     /**
      * POST /api/timetable/validate
      * Pre-save conflict check. Call this BEFORE creating an entry.
-     * Returns: { hasConflicts: true/false, conflicts: ["..."] }
+     * Returns: { hasConflicts: true/false, conflicts: [""..."] }
      */
     @PostMapping("/validate")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ConflictCheckResult> validateEntry(
+            Authentication authentication,
             @Valid @RequestBody CreateTimetableEntryRequest request) {
+        adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         ConflictCheckResult result = timetableService.validateEntry(
                 request.getSectionId(), request.getFacultyId(), request.getRoomId(), request.getSubjectId(),
                 request.getDay(), request.getStartTime(), request.getEndTime(),
@@ -80,7 +101,8 @@ public class TimetableController {
      */
     @PostMapping("/entry")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createEntry(@Valid @RequestBody CreateTimetableEntryRequest request) {
+    public ResponseEntity<?> createEntry(Authentication authentication, @Valid @RequestBody CreateTimetableEntryRequest request) {
+        adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         try {
             TimetableEntryResponseDTO created = timetableService.createEntry(request);
             return ResponseEntity.ok(created);
@@ -96,8 +118,10 @@ public class TimetableController {
     @PutMapping("/entry/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> updateEntry(
+            Authentication authentication,
             @PathVariable Long id,
             @Valid @RequestBody CreateTimetableEntryRequest request) {
+        adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         try {
             TimetableEntryResponseDTO updated = timetableService.updateEntry(id, request);
             return ResponseEntity.ok(updated);
@@ -111,7 +135,10 @@ public class TimetableController {
      */
     @DeleteMapping("/entry/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> deleteEntry(@PathVariable Long id) {
+    public ResponseEntity<String> deleteEntry(Authentication authentication, @PathVariable Long id) {
+        TimetableEntry entry = timetableEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Timetable entry not found"));
+        adminScopeValidator.enforceAccessToSection(authentication, entry.getSection().getId());
         timetableService.deleteEntry(id);
         return ResponseEntity.ok("Entry deleted successfully");
     }
@@ -120,11 +147,12 @@ public class TimetableController {
 
     /**
      * POST /api/timetable/assignment
-     * Create a subject assignment (admin plans who teaches what).
+     * Create a subject assignment (admin plan who teaches what).
      */
     @PostMapping("/assignment")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createAssignment(@Valid @RequestBody SubjectAssignmentRequest request) {
+    public ResponseEntity<?> createAssignment(Authentication authentication, @Valid @RequestBody SubjectAssignmentRequest request) {
+        adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         try {
             SubjectAssignment result = timetableService.createAssignment(request);
             return ResponseEntity.ok(mapToAssignmentDTO(result));
@@ -180,7 +208,10 @@ public class TimetableController {
      */
     @DeleteMapping("/assignment/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> deleteAssignment(@PathVariable Long id) {
+    public ResponseEntity<String> deleteAssignment(Authentication authentication, @PathVariable Long id) {
+        SubjectAssignment assignment = subjectAssignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        adminScopeValidator.enforceAccessToSection(authentication, assignment.getSection().getId());
         timetableService.deleteAssignment(id);
         return ResponseEntity.ok("Assignment deleted");
     }
@@ -245,7 +276,16 @@ public class TimetableController {
     // AOCS: Overrides CRUD
     @PostMapping("/override")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createOverride(@RequestBody TimetableOverrideRequestDTO dto) {
+    public ResponseEntity<?> createOverride(Authentication authentication, @RequestBody TimetableOverrideRequestDTO dto) {
+        if (dto.getSectionIds() != null && !dto.getSectionIds().isEmpty()) {
+            for (Long sId : dto.getSectionIds()) {
+                adminScopeValidator.enforceAccessToSection(authentication, sId);
+            }
+        } else if (dto.getTimetableEntryId() != null) {
+            TimetableEntry entry = timetableEntryRepository.findById(dto.getTimetableEntryId())
+                    .orElseThrow(() -> new RuntimeException("Timetable entry template not found"));
+            adminScopeValidator.enforceAccessToSection(authentication, entry.getSection().getId());
+        }
         try {
             return ResponseEntity.ok(timetableService.createOverride(dto));
         } catch (Exception e) {
@@ -255,7 +295,14 @@ public class TimetableController {
 
     @DeleteMapping("/override/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> cancelOverride(@PathVariable Long id) {
+    public ResponseEntity<?> cancelOverride(Authentication authentication, @PathVariable Long id) {
+        TimetableOverride override = overrideRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Override not found"));
+        if (override.getSections() != null) {
+            for (Section s : override.getSections()) {
+                adminScopeValidator.enforceAccessToSection(authentication, s.getId());
+            }
+        }
         try {
             return ResponseEntity.ok(timetableService.cancelOverride(id));
         } catch (Exception e) {

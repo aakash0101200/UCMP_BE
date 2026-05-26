@@ -108,6 +108,10 @@ public class AttendanceSession {
     @Builder.Default
     private int manualMarkGraceMinutes = 15;
 
+    @Builder.Default
+    @Column(name = "duration_in_minutes")
+    private Integer durationInMinutes = 40;
+
     // ── HELPERS ────────────────────────────────────────────────────────────────
 
     /**

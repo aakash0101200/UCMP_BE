@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,7 +49,8 @@ public class AttendanceController {
                 request.getScheduledFacultyId(),
                 request.getLatitude(),
                 request.getLongitude(),
-                request.getRadiusInMeters());
+                request.getRadiusInMeters(),
+                request.getDurationInMinutes());
         return ResponseEntity.ok(Map.of("id", session.getId(), "sessionType", session.getSessionType()));
     }
 
@@ -81,19 +83,38 @@ public class AttendanceController {
         }
     }
 
-    // ── Student: find active session for their section ─────────────────────────
+    // ── Student / Faculty: find active session ─────────────────────────
     @GetMapping("/active-session")
-    @PreAuthorize("hasAuthority('STUDENT')")
-    public ResponseEntity<?> getActiveSessionForStudent(Authentication authentication) {
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getActiveSession(Authentication authentication) {
         String collegeId = authentication.getName();
-        return attendanceService.findActiveSessionForStudent(collegeId)
-                .map(session -> ResponseEntity.ok(Map.of(
-                        "id", session.getId(),
-                        "sectionName", session.getSection().getSectionName(),
-                        "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
-                        "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
-                )))
-                .orElse(ResponseEntity.notFound().build());
+        boolean isStudent = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("STUDENT"));
+
+        if (isStudent) {
+            return attendanceService.findActiveSessionForStudent(collegeId)
+                    .map(session -> ResponseEntity.ok(Map.of(
+                            "id", session.getId(),
+                            "sectionId", session.getSection().getId(),
+                            "sectionName", session.getSection().getSectionName(),
+                            "subjectId", session.getSubject() != null ? session.getSubject().getId() : null,
+                            "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
+                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
+                    )))
+                    .orElse(ResponseEntity.notFound().build());
+        } else {
+            return attendanceService.findActiveSessionForFaculty(collegeId)
+                    .map(session -> ResponseEntity.ok(Map.of(
+                            "id", session.getId(),
+                            "sectionId", session.getSection().getId(),
+                            "sectionName", session.getSection().getSectionName(),
+                            "subjectId", session.getSubject() != null ? session.getSubject().getId() : null,
+                            "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
+                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
+                    )))
+                    .orElse(ResponseEntity.notFound().build());
+        }
     }
 
     // ── Faculty: get all records for a session ─────────────────────────────────

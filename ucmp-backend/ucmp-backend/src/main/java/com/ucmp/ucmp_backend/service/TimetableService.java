@@ -192,31 +192,6 @@ public class TimetableService {
 
         TimetableEntry saved = timetableRepo.save(entry);
 
-        // Save and broadcast schedule creation announcement
-        try {
-            Announcements scheduleAnnouncement = new Announcements();
-            scheduleAnnouncement.setTitle("New Schedule Slot: " + saved.getSubject().getName());
-            scheduleAnnouncement.setDescription(String.format("A new slot has been scheduled for %s (%s) on %s at %s - %s in %s.", 
-                    saved.getSubject().getName(),
-                    saved.getSubject().getCode(),
-                    saved.getDay().toString(),
-                    saved.getStartTime().toString(),
-                    saved.getEndTime().toString(),
-                    saved.getRoom().getName()));
-            scheduleAnnouncement.setAuthor("System");
-            scheduleAnnouncement.setTime(java.time.LocalDateTime.now().toString());
-            scheduleAnnouncement.setType("SCHEDULE");
-            scheduleAnnouncement.setSectionId(saved.getSection().getId());
-            scheduleAnnouncement.setCompleted(false);
-
-            announcementRepo.save(scheduleAnnouncement);
-
-            // Broadcast to notifications channel
-            messagingTemplate.convertAndSend("/topic/notifications/section/" + saved.getSection().getId(), scheduleAnnouncement);
-        } catch (Exception e) {
-            System.err.println("Failed to create and broadcast schedule creation announcement: " + e.getMessage());
-        }
-
         // Clear resolved schedule caches since templates are modified
         try {
             org.springframework.cache.Cache sectionCache = cacheManager.getCache("resolved_section_schedules");
@@ -260,31 +235,6 @@ public class TimetableService {
         if (req.getEntryType() != null) existing.setEntryType(req.getEntryType());
 
         TimetableEntry saved = timetableRepo.save(existing);
-
-        // Save and broadcast schedule modification announcement
-        try {
-            Announcements scheduleAnnouncement = new Announcements();
-            scheduleAnnouncement.setTitle("Schedule Updated: " + saved.getSubject().getName());
-            scheduleAnnouncement.setDescription(String.format("The schedule for %s (%s) has been updated to %s at %s - %s in %s.", 
-                    saved.getSubject().getName(),
-                    saved.getSubject().getCode(),
-                    saved.getDay().toString(),
-                    saved.getStartTime().toString(),
-                    saved.getEndTime().toString(),
-                    saved.getRoom().getName()));
-            scheduleAnnouncement.setAuthor("System");
-            scheduleAnnouncement.setTime(java.time.LocalDateTime.now().toString());
-            scheduleAnnouncement.setType("SCHEDULE");
-            scheduleAnnouncement.setSectionId(saved.getSection().getId());
-            scheduleAnnouncement.setCompleted(false);
-
-            announcementRepo.save(scheduleAnnouncement);
-
-            // Broadcast to notifications channel
-            messagingTemplate.convertAndSend("/topic/notifications/section/" + saved.getSection().getId(), scheduleAnnouncement);
-        } catch (Exception e) {
-            System.err.println("Failed to create and broadcast schedule update announcement: " + e.getMessage());
-        }
 
         // Clear resolved schedule caches since templates are modified
         try {

@@ -31,6 +31,15 @@ public class Announcements {
     @Column(name = "student_college_id")
     private String studentCollegeId;
 
+    @Column(name = "target_role")
+    private String targetRole;
+
+    @Column(name = "target_year")
+    private Integer targetYear;
+
+    @Column(name = "target_dept")
+    private String targetDept;
+
 
 
     public String getLocation() {
@@ -113,8 +122,28 @@ public class Announcements {
         this.studentCollegeId = studentCollegeId;
     }
 
+    public String getTargetRole() {
+        return targetRole;
+    }
 
+    public void setTargetRole(String targetRole) {
+        this.targetRole = targetRole;
+    }
 
+    public Integer getTargetYear() {
+        return targetYear;
+    }
 
+    public void setTargetYear(Integer targetYear) {
+        this.targetYear = targetYear;
+    }
+
+    public String getTargetDept() {
+        return targetDept;
+    }
+
+    public void setTargetDept(String targetDept) {
+        this.targetDept = targetDept;
+    }
 }
 

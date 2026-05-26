@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface AnnouncementRepository extends JpaRepository<Announcements, Long> {
     Optional<Announcements> findById(Long userId);
+    List<Announcements> findAllByOrderByAnnouncementIdDesc();
     List<Announcements> findBySectionIdIsNullOrSectionIdOrderByAnnouncementIdDesc(Long sectionId);
 
     @Query("SELECT a FROM Announcements a WHERE " +

@@ -21,6 +21,8 @@ public class ProfileResponse {
     private String address;
 
     private List<String> roles;
+    private String department;
+    private Integer yearScope;
 
     // Role-specific subobjects (nullable)
     private StudentInfo student;

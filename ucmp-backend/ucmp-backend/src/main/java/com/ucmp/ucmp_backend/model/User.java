@@ -48,6 +48,11 @@ public class User {
     @Column(unique = true , nullable = false)
     private String email;
 
+    private String department; // e.g., "Computer Science", "Administration" (null = global or student batch)
+
+    @Column(name = "year_scope")
+    private Integer yearScope;
+
 
     @CreationTimestamp
     private LocalDateTime createdAt;

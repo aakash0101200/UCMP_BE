@@ -5,14 +5,17 @@ import com.ucmp.ucmp_backend.dto.ProfileUpdateRequest;
 import com.ucmp.ucmp_backend.model.User;
 import com.ucmp.ucmp_backend.model.Student;
 import com.ucmp.ucmp_backend.model.Faculty;
+import com.ucmp.ucmp_backend.model.Profile;
 import com.ucmp.ucmp_backend.repository.UserRepository;
 import com.ucmp.ucmp_backend.repository.StudentRepository;
 import com.ucmp.ucmp_backend.repository.FacultyRepository;
+import com.ucmp.ucmp_backend.repository.ProfileRepository;
 import com.ucmp.ucmp_backend.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +31,7 @@ public class ProfileController {
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final FacultyRepository facultyRepository;
+    private final ProfileRepository profileRepository;
 
     /**
      * Retrieves the profile of the currently authenticated user.
@@ -35,13 +39,27 @@ public class ProfileController {
      * which the frontend schedule views need to call the timetable API.
      */
     @GetMapping
-    public ResponseEntity<ProfileResponse> getProfile(Authentication authentication) {
-        String collegeId = authentication.getName();
-        User user = userRepository.findByCollegeId(collegeId)
+    @Transactional
+    public ResponseEntity<ProfileResponse> getProfile(
+            Authentication authentication,
+            @RequestParam(required = false) String collegeId) {
+
+        String targetCollegeId = (collegeId != null && !collegeId.trim().isEmpty()) ? collegeId
+                : authentication.getName();
+        User user = userRepository.findByCollegeId(targetCollegeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (user.getProfile() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found for user: " + collegeId);
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            // Create profile on-the-fly for safety and auto-link missing records
+            profile = new Profile();
+            profile.setUser_CollegeId(user.getCollegeId());
+            profile.setName(user.getName());
+            profile.setEmail(user.getEmail());
+            profile.setUser(user);
+            profile = profileRepository.save(profile);
+            user.setProfile(profile);
+            userRepository.save(user);
         }
 
         List<String> roleNames = user.getRoles().stream()
@@ -79,8 +97,10 @@ public class ProfileController {
                 .collegeId(user.getCollegeId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .profilePictureUrl(user.getProfile().getProfilePictureUrl())
+                .profilePictureUrl(profile != null ? profile.getProfilePictureUrl() : null)
                 .roles(roleNames)
+                .department(user.getDepartment())
+                .yearScope(user.getYearScope())
                 .student(studentInfo)
                 .faculty(facultyInfo)
                 .build();
@@ -93,10 +113,9 @@ public class ProfileController {
      */
     @PutMapping("/update")
     public ResponseEntity<ProfileResponse> updateProfile(Authentication authentication,
-                                                         @RequestBody ProfileUpdateRequest request) {
+            @RequestBody ProfileUpdateRequest request) {
         String collegeId = authentication.getName();
         ProfileResponse updatedProfile = profileService.updateProfile(collegeId, request);
         return ResponseEntity.ok(updatedProfile);
     }
 }
-

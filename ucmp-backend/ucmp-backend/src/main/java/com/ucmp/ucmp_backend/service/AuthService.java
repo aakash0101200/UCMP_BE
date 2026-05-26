@@ -10,6 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -32,12 +37,40 @@ public class AuthService {
 
     // Register a new user (Now restricted to Students only)
     public LoginResponse register(RegisterRequest request) {
-        // 🚨 NEW SECURITY CHECK: Prevent public registration for Faculty/Admin
+        // 🚨 NEW SECURITY CHECK: Prevent public registration for Faculty/Admin unless requested by an authenticated ADMIN
         boolean attemptsToRegisterAsStaff = request.getRoles().stream()
                 .anyMatch(role -> role == RoleName.ADMIN || role == RoleName.FACULTY);
 
         if (attemptsToRegisterAsStaff) {
-            throw new RuntimeException("Security Violation: Public registration is restricted to Students only.");
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isCurrentAdmin = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+            
+            if (!isCurrentAdmin) {
+                // Fallback: manually parse JWT from current HTTP request
+                try {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        HttpServletRequest httpServletRequest = attributes.getRequest();
+                        String token = jwtUtil.extractTokenFromRequest(httpServletRequest);
+                        if (token != null) {
+                            String collegeId = jwtUtil.extractCollegeId(token);
+                            if (collegeId != null && jwtUtil.validateToken(token, collegeId)) {
+                                User caller = userRepository.findByCollegeId(collegeId).orElse(null);
+                                if (caller != null && caller.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN)) {
+                                    isCurrentAdmin = true;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Manual JWT validation failed in AuthService: " + e.getMessage());
+                }
+            }
+
+            if (!isCurrentAdmin) {
+                throw new RuntimeException("Security Violation: Public registration is restricted to Students only.");
+            }
         }
 
         // ... Keep all your existing checks below this line ...
@@ -62,6 +95,8 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(roles) // Roles now correctly set
+                .department(request.getDepartment())
+                .yearScope(roles.stream().anyMatch(r -> r.getName() == RoleName.ADMIN) ? request.getYear() : null)
                 .build();
 
 
@@ -125,6 +160,7 @@ public class AuthService {
                 .email(profile.getEmail())
                 .roles(List.copyOf(roleNames))
                 .collegeId(user.getCollegeId())
+                .yearScope(user.getYearScope())
                 .build();
 
         return LoginResponse.builder()
@@ -152,6 +188,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode("Faculty@123")) // Default password
                 .roles(Collections.singleton(facultyRole))
+                .department(request.getDepartment())
                 .build();
         userRepository.save(user);
 
@@ -205,11 +242,13 @@ public class AuthService {
         profile.setName(user.getName());
         profile.setEmail(user.getEmail());
         profile.setUser(user);
+        user.setProfile(profile);
         profileRepository.save(profile);
 
         // 3. Fetch Batch and Section
         Batch batch = batchRepository.findById(request.getBatchId())
                 .orElseThrow(() -> new RuntimeException("Batch not found"));
+        user.setDepartment(batch.getBatchName());
 
         Section section = sectionRepository.findById(request.getSectionId())
                 .orElseThrow(() -> new RuntimeException("Section not found"));
@@ -223,6 +262,7 @@ public class AuthService {
         student.setYear(String.valueOf(request.getYear()));
         student.setBatch(batch);
         student.setSection(section);
+        user.setStudent(student);
 
         studentRepository.save(student);
     }
@@ -251,12 +291,14 @@ public class AuthService {
                 .email(profile.getEmail())
                 .roles(List.copyOf(roleNames))
                 .collegeId(user.getCollegeId())
+                .yearScope(user.getYearScope())
                 .build()
                 : ProfileResponse.builder()
                 .name(user.getName())
                 .email(user.getEmail())
                 .roles(List.copyOf(roleNames))
                 .collegeId(user.getCollegeId())
+                .yearScope(user.getYearScope())
                 .build();
 
         return LoginResponse.builder()

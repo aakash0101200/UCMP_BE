@@ -13,4 +13,5 @@ public class AttendanceStartRequestDto {
     private Double latitude;
     private Double longitude;
     private Double radiusInMeters;
+    private Integer durationInMinutes;
 }
