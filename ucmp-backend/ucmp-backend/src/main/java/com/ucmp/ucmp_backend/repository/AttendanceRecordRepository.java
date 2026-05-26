@@ -55,4 +55,11 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
             @Param("studentId") Long studentId,
             @Param("facultyId") Long facultyId,
             @Param("sectionId") Long sectionId);
+
+    @Query("SELECT COUNT(r) FROM AttendanceRecord r " +
+           "WHERE r.student.id = :studentId " +
+           "AND r.attendanceSession.id IN :sessionIds")
+    long countByStudentIdAndSessionIdIn(
+            @Param("studentId") Long studentId,
+            @Param("sessionIds") List<Long> sessionIds);
 }

@@ -186,11 +186,52 @@ public class AttendanceController {
      */
     @GetMapping("/faculty/session-history")
     @PreAuthorize("hasAuthority('FACULTY')")
-    public ResponseEntity<?> getFacultySessionHistory(Authentication authentication) {
+    public ResponseEntity<?> getFacultySessionHistory(
+            Authentication authentication,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         String collegeId = authentication.getName();
         Faculty faculty = facultyRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not a Faculty"));
-        return ResponseEntity.ok(attendanceService.getFacultySessionHistory(faculty.getId()));
+
+        java.time.LocalDateTime start = null;
+        java.time.LocalDateTime end = null;
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            start = java.time.LocalDate.parse(startDate).atStartOfDay();
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            end = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
+        }
+
+        return ResponseEntity.ok(attendanceService.getFacultySessionHistory(faculty.getId(), start, end));
+    }
+
+    @GetMapping("/faculty/debarred-list")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> getDebarredList(
+            Authentication authentication,
+            @RequestParam Long subjectId,
+            @RequestParam Long sectionId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        String collegeId = authentication.getName();
+        Faculty faculty = facultyRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new RuntimeException("Logged in user is not a Faculty"));
+
+        java.time.LocalDateTime start = null;
+        java.time.LocalDateTime end = null;
+
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            start = java.time.LocalDate.parse(startDate).atStartOfDay();
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            end = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
+        }
+
+        return ResponseEntity.ok(attendanceService.getDebarredList(
+                faculty.getId(), subjectId, sectionId, start, end));
     }
 
     // ── Student: per-subject attendance summary ────────────────────────────────

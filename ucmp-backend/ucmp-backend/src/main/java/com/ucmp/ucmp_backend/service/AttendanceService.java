@@ -529,9 +529,24 @@ public class AttendanceService {
 
     // ── Faculty: get session history (recent sessions) ────────────────────────
     public List<Map<String, Object>> getFacultySessionHistory(Long facultyId) {
-        return sessionRepository.findByFacultyIdOrderByStartTimeDesc(facultyId)
-                .stream()
-                .limit(20) // Last 20 sessions
+        return getFacultySessionHistory(facultyId, null, null);
+    }
+
+    public List<Map<String, Object>> getFacultySessionHistory(
+            Long facultyId,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate) {
+        
+        List<AttendanceSession> sessions;
+        if (startDate != null || endDate != null) {
+            sessions = sessionRepository.findByFacultyIdAndDateRange(facultyId, startDate, endDate);
+        } else {
+            sessions = sessionRepository.findByFacultyIdOrderByStartTimeDesc(facultyId).stream()
+                    .limit(20)
+                    .toList();
+        }
+
+        return sessions.stream()
                 .map(s -> {
                     long presentCount = attendanceRecordRepository
                             .findByAttendanceSessionId(s.getId()).size();
@@ -549,6 +564,91 @@ public class AttendanceService {
                     return m;
                 })
                 .collect(Collectors.toList());
+    }
+
+    // ── Faculty: get debarred list for a subject & section ────────────────────
+    public Map<String, Object> getDebarredList(
+            Long facultyId, Long subjectId, Long sectionId,
+            java.time.LocalDateTime startDate, java.time.LocalDateTime endDate) {
+
+        // Find sessions conducted for this subject, section, and date range
+        List<AttendanceSession> sessions = sessionRepository.findSessionsForDebarredList(
+                subjectId, sectionId, startDate, endDate);
+
+        List<Long> sessionIds = sessions.stream().map(AttendanceSession::getId).toList();
+
+        // Find all students in this section
+        List<Student> students = studentRepository.findBySectionId(sectionId);
+
+        List<Map<String, Object>> studentStats = new java.util.ArrayList<>();
+
+        for (Student student : students) {
+            long conducted = sessions.size();
+            long attended = 0;
+
+            if (conducted > 0 && !sessionIds.isEmpty()) {
+                // Count attendance records for this student in these sessions
+                attended = attendanceRecordRepository.countByStudentIdAndSessionIdIn(student.getId(), sessionIds);
+            }
+
+            double percentage = conducted > 0
+                    ? Math.round((attended * 100.0 / conducted) * 100.0) / 100.0
+                    : 100.0; // Default to 100% if no classes conducted
+
+            boolean isDebarred = percentage < 75.0;
+
+            Map<String, Object> stat = new java.util.LinkedHashMap<>();
+            stat.put("studentId", student.getId());
+            stat.put("name", student.getName());
+            stat.put("collegeId", student.getCollegeId());
+            stat.put("rollNumber", student.getRollNumber());
+            stat.put("classesConducted", conducted);
+            stat.put("classesAttended", attended);
+            stat.put("attendancePercentage", percentage);
+            stat.put("isDebarred", isDebarred);
+            studentStats.add(stat);
+        }
+
+        // Sort studentStats by rollNumber or name
+        studentStats.sort((s1, s2) -> {
+            String roll1 = (String) s1.get("rollNumber");
+            String roll2 = (String) s2.get("rollNumber");
+            if (roll1 != null && roll2 != null) {
+                return roll1.compareTo(roll2);
+            }
+            return ((String) s1.get("name")).compareTo((String) s2.get("name"));
+        });
+
+        // Get subject info
+        String subjectName = "N/A";
+        String subjectCode = "N/A";
+        if (!sessions.isEmpty() && sessions.get(0).getSubject() != null) {
+            subjectName = sessions.get(0).getSubject().getName();
+            subjectCode = sessions.get(0).getSubject().getCode();
+        } else {
+            // Find by repository
+            var subjectOpt = subjectRepository.findById(subjectId);
+            if (subjectOpt.isPresent()) {
+                subjectName = subjectOpt.get().getName();
+                subjectCode = subjectOpt.get().getCode();
+            }
+        }
+
+        // Get section name
+        String sectionName = "N/A";
+        var sectionOpt = sectionRepository.findById(sectionId);
+        if (sectionOpt.isPresent()) {
+            sectionName = sectionOpt.get().getSectionName();
+        }
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("subjectName", subjectName);
+        result.put("subjectCode", subjectCode);
+        result.put("sectionName", sectionName);
+        result.put("totalSessionsConducted", sessions.size());
+        result.put("students", studentStats);
+
+        return result;
     }
 
     // ── Student: per-subject attendance summary ────────────────────────────────
