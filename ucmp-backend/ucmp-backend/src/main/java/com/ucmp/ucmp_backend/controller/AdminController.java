@@ -41,8 +41,9 @@ public class AdminController {
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not an Admin"));
-        
-        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
+
+        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
             return "ALL";
         }
         return adminUser.getDepartment();
@@ -50,10 +51,12 @@ public class AdminController {
 
     @PostMapping("/faculty")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> createFaculty(Authentication authentication, @RequestBody AdminCreateFacultyRequest request) {
+    public ResponseEntity<String> createFaculty(Authentication authentication,
+            @RequestBody AdminCreateFacultyRequest request) {
         String dept = enforceAdminRoleAndDepartment(authentication);
         if (!"ALL".equals(dept) && !dept.equalsIgnoreCase(request.getDepartment())) {
-            throw new RuntimeException("Access Denied: You can only create Faculty members inside your own department: " + dept);
+            throw new RuntimeException(
+                    "Access Denied: You can only create Faculty members inside your own department: " + dept);
         }
         authService.adminCreateFaculty(request);
         return ResponseEntity.ok("Faculty created and sections assigned successfully.");
@@ -61,13 +64,15 @@ public class AdminController {
 
     @PostMapping("/student")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> createStudent(Authentication authentication, @RequestBody AdminCreateStudentRequest request) {
+    public ResponseEntity<String> createStudent(Authentication authentication,
+            @RequestBody AdminCreateStudentRequest request) {
         String dept = enforceAdminRoleAndDepartment(authentication);
         if (!"ALL".equals(dept)) {
             Batch batch = batchRepository.findById(request.getBatchId())
                     .orElseThrow(() -> new RuntimeException("Batch not found"));
             if (!dept.equalsIgnoreCase(batch.getBatchName())) {
-                throw new RuntimeException("Access Denied: You can only create Students inside your own department: " + dept);
+                throw new RuntimeException(
+                        "Access Denied: You can only create Students inside your own department: " + dept);
             }
             adminScopeValidator.enforceAccess(authentication, batch.getBatchName(), request.getYear());
         }
@@ -81,23 +86,22 @@ public class AdminController {
         String dept = enforceAdminRoleAndDepartment(authentication);
         long studentCount, facultyCount, totalUsers;
         if ("ALL".equals(dept)) {
-             studentCount = studentRepository.count();
-             facultyCount = facultyRepository.count();
-             totalUsers = userRepository.count();
+            studentCount = studentRepository.count();
+            facultyCount = facultyRepository.count();
+            totalUsers = userRepository.count();
         } else {
-             studentCount = studentRepository.findAll().stream()
-                     .filter(s -> s.getBatch() != null && dept.equalsIgnoreCase(s.getBatch().getBatchName()))
-                     .count();
-             facultyCount = facultyRepository.findAll().stream()
-                     .filter(f -> dept.equalsIgnoreCase(f.getDepartment()))
-                     .count();
-             totalUsers = studentCount + facultyCount;
+            studentCount = studentRepository.findAll().stream()
+                    .filter(s -> s.getBatch() != null && dept.equalsIgnoreCase(s.getBatch().getBatchName()))
+                    .count();
+            facultyCount = facultyRepository.findAll().stream()
+                    .filter(f -> dept.equalsIgnoreCase(f.getDepartment()))
+                    .count();
+            totalUsers = studentCount + facultyCount;
         }
         return ResponseEntity.ok(Map.of(
                 "totalUsers", totalUsers,
                 "studentCount", studentCount,
-                "facultyCount", facultyCount
-        ));
+                "facultyCount", facultyCount));
     }
 
     @GetMapping("/users")
@@ -114,7 +118,8 @@ public class AdminController {
                         if (u.getFaculty() != null && dept.equalsIgnoreCase(u.getFaculty().getDepartment())) {
                             return true;
                         }
-                        if (u.getStudent() != null && u.getStudent().getBatch() != null && dept.equalsIgnoreCase(u.getStudent().getBatch().getBatchName())) {
+                        if (u.getStudent() != null && u.getStudent().getBatch() != null
+                                && dept.equalsIgnoreCase(u.getStudent().getBatch().getBatchName())) {
                             if (adminUser.getYearScope() != null) {
                                 return String.valueOf(adminUser.getYearScope()).equals(u.getStudent().getYear());
                             }
@@ -185,9 +190,11 @@ public class AdminController {
             if (!"ALL".equals(dept)) {
                 throw new RuntimeException("Access Denied: Only Super Admins can reset Administrator passwords.");
             }
-            // Block resetting the primary Super Admin (ADMIN_001) unless they are doing it themselves
+            // Block resetting the primary Super Admin (ADMIN_001) unless they are doing it
+            // themselves
             if ("ADMIN_001".equals(collegeId) && !"ADMIN_001".equals(callerCollegeId)) {
-                throw new RuntimeException("Access Denied: The primary Super Admin password cannot be reset by other administrators.");
+                throw new RuntimeException(
+                        "Access Denied: The primary Super Admin password cannot be reset by other administrators.");
             }
         } else {
             // Check regular admin scope for student/faculty
@@ -196,14 +203,17 @@ public class AdminController {
                 if (user.getFaculty() != null && dept.equalsIgnoreCase(user.getFaculty().getDepartment())) {
                     sameDept = true;
                 }
-                if (user.getStudent() != null && user.getStudent().getBatch() != null && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
+                if (user.getStudent() != null && user.getStudent().getBatch() != null
+                        && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
                     User adminUser = userRepository.findByCollegeId(callerCollegeId).orElseThrow();
-                    if (adminUser.getYearScope() == null || String.valueOf(adminUser.getYearScope()).equals(user.getStudent().getYear())) {
+                    if (adminUser.getYearScope() == null
+                            || String.valueOf(adminUser.getYearScope()).equals(user.getStudent().getYear())) {
                         sameDept = true;
                     }
                 }
                 if (!sameDept) {
-                    throw new RuntimeException("Access Denied: You cannot modify users outside your department and year scope.");
+                    throw new RuntimeException(
+                            "Access Denied: You cannot modify users outside your department and year scope.");
                 }
             }
         }
@@ -214,9 +224,8 @@ public class AdminController {
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of(
-            "message", "Password reset successfully.",
-            "temporaryPassword", tempPassword
-        ));
+                "message", "Password reset successfully.",
+                "temporaryPassword", tempPassword));
     }
 
     private String generateRandomAlphanumericPassword(int length) {
@@ -229,10 +238,10 @@ public class AdminController {
         return sb.toString();
     }
 
-
     @PutMapping("/users/{collegeId}/student-section")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> updateStudentSection(Authentication authentication, @PathVariable String collegeId, @RequestBody Map<String, Long> payload) {
+    public ResponseEntity<String> updateStudentSection(Authentication authentication, @PathVariable String collegeId,
+            @RequestBody Map<String, Long> payload) {
         String dept = enforceAdminRoleAndDepartment(authentication);
         Long sectionId = payload.get("sectionId");
         if (sectionId == null) {
@@ -250,7 +259,8 @@ public class AdminController {
 
         if (!"ALL".equals(dept)) {
             if (student.getBatch() == null || !dept.equalsIgnoreCase(student.getBatch().getBatchName())) {
-                throw new RuntimeException("Access Denied: You cannot modify students outside your department: " + dept);
+                throw new RuntimeException(
+                        "Access Denied: You cannot modify students outside your department: " + dept);
             }
             if (section.getBatch() == null || !dept.equalsIgnoreCase(section.getBatch().getBatchName())) {
                 throw new RuntimeException("Access Denied: Target section does not belong to your department: " + dept);
@@ -270,7 +280,8 @@ public class AdminController {
 
     @PutMapping("/users/{collegeId}/faculty-sections")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> updateFacultySections(Authentication authentication, @PathVariable String collegeId, @RequestBody Map<String, List<Long>> payload) {
+    public ResponseEntity<String> updateFacultySections(Authentication authentication, @PathVariable String collegeId,
+            @RequestBody Map<String, List<Long>> payload) {
         String dept = enforceAdminRoleAndDepartment(authentication);
         List<Long> sectionIds = payload.get("sectionIds");
         if (sectionIds == null) {
@@ -285,7 +296,8 @@ public class AdminController {
 
         if (!"ALL".equals(dept)) {
             if (!dept.equalsIgnoreCase(faculty.getDepartment())) {
-                throw new RuntimeException("Access Denied: You cannot modify faculty members outside your department: " + dept);
+                throw new RuntimeException(
+                        "Access Denied: You cannot modify faculty members outside your department: " + dept);
             }
         }
 
@@ -307,7 +319,8 @@ public class AdminController {
             if (user.getFaculty() != null && dept.equalsIgnoreCase(user.getFaculty().getDepartment())) {
                 sameDept = true;
             }
-            if (user.getStudent() != null && user.getStudent().getBatch() != null && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
+            if (user.getStudent() != null && user.getStudent().getBatch() != null
+                    && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
                 sameDept = true;
             }
             if (!sameDept) {

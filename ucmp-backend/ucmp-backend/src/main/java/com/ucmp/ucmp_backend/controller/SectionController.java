@@ -27,7 +27,8 @@ public class SectionController {
     @GetMapping
     public ResponseEntity<List<SectionDTO>> getAllSections() {
         List<SectionDTO> sections = sectionRepository.findAll().stream()
-                .map(s -> new SectionDTO(s.getId(), s.getSectionName(), s.getYear(), s.getBatch() != null ? s.getBatch().getId() : null))
+                .map(s -> new SectionDTO(s.getId(), s.getSectionName(), s.getYear(),
+                        s.getBatch() != null ? s.getBatch().getId() : null))
                 .toList();
         return ResponseEntity.ok(sections);
     }
@@ -37,9 +38,10 @@ public class SectionController {
     public ResponseEntity<?> createSection(
             Authentication authentication,
             @RequestBody SectionCreationDTO dto) {
-        
+
         com.ucmp.ucmp_backend.model.Batch batch = batchRepository.findById(dto.getBatchId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Batch not found: " + dto.getBatchId()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Batch not found: " + dto.getBatchId()));
 
         try {
             adminScopeValidator.enforceAccess(authentication, batch.getBatchName(), dto.getYear());
@@ -54,7 +56,8 @@ public class SectionController {
 
         Section saved = sectionRepository.save(section);
 
-        return ResponseEntity.ok(new SectionDTO(saved.getId(), saved.getSectionName(), saved.getYear(), saved.getBatch().getId()));
+        return ResponseEntity
+                .ok(new SectionDTO(saved.getId(), saved.getSectionName(), saved.getYear(), saved.getBatch().getId()));
     }
 
     @lombok.Data

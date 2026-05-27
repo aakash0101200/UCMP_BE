@@ -14,71 +14,65 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "email"),
-        @UniqueConstraint(columnNames = "collegeId")
+                @UniqueConstraint(columnNames = "email"),
+                @UniqueConstraint(columnNames = "collegeId")
 })
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"password"})
-@EqualsAndHashCode(exclude = {"password"})
+@ToString(exclude = { "password" })
+@EqualsAndHashCode(exclude = { "password" })
 
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
 
-    @NotNull
-    @Column(unique = true, updatable = false)
-    private String collegeId; // e.g., "STU123", "FAC456"
+        @NotNull
+        @Column(unique = true, updatable = false)
+        private String collegeId; // e.g., "STU123", "FAC456"
 
-    @NotNull
-    @Column(nullable = false)
+        @NotNull
+        @Column(nullable = false)
 
-    private String password;
+        private String password;
 
-    @NotNull
-    @Column(nullable = false)
-    private String name;
+        @NotNull
+        @Column(nullable = false)
+        private String name;
 
-    @Email
-    @NotNull
-    @Column(unique = true , nullable = false)
-    private String email;
+        @Email
+        @NotNull
+        @Column(unique = true, nullable = false)
+        private String email;
 
-    private String department; // e.g., "Computer Science", "Administration" (null = global or student batch)
+        private String department; // e.g., "Computer Science", "Administration" (null = global or student batch)
 
-    @Column(name = "year_scope")
-    private Integer yearScope;
+        @Column(name = "year_scope")
+        private Integer yearScope;
 
+        @CreationTimestamp
+        private LocalDateTime createdAt;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+        @UpdateTimestamp
+        private LocalDateTime updatedAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+        // Many to Many Roles
+        @ManyToMany(fetch = FetchType.EAGER)
+        @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+        private Set<Role> roles = new HashSet<>();
 
-    // Many to Many Roles
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+        @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        @JsonManagedReference
+        private Profile profile;
 
+        @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+        @JsonManagedReference
+        private Student student;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
-    private Profile profile;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private Student student;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private Faculty faculty;
-
+        @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+        @JsonManagedReference
+        private Faculty faculty;
 
 }

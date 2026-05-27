@@ -17,28 +17,30 @@ public class StudentController {
     private StudentService studentService;
 
     // GET: fetch profile by collegeId (useful for profile cards)
-//    @GetMapping("/{collegeId}/profile")
-//    public ResponseEntity<StudentProfileDTO> getProfile(@PathVariable String collegeId) {
-//        return studentService.getStudentProfileByCollegeId(collegeId)
-//                .map(ResponseEntity::ok)
-//                .orElseGet(() -> ResponseEntity.notFound().build());
-//    }
-//
-//    // POST: create new student+profile
-//    @PostMapping
-//    public ResponseEntity<StudentProfileDTO> createProfile(@RequestBody StudentProfileDTO dto) {
-//        return ResponseEntity.ok(studentService.createStudentProfile(dto));
-//    }
-//
-//    // PUT: update existing student+profile
-//    @PutMapping("/{collegeId}/profile")
-//    public ResponseEntity<StudentProfileDTO> updateProfile(
-//            @PathVariable String collegeId,
-//            @RequestBody StudentProfileDTO dto) {
-//        return studentService.updateStudentProfile(collegeId, dto)
-//                .map(ResponseEntity::ok)
-//                .orElseGet(() -> ResponseEntity.notFound().build());
-//    }
+    // @GetMapping("/{collegeId}/profile")
+    // public ResponseEntity<StudentProfileDTO> getProfile(@PathVariable String
+    // collegeId) {
+    // return studentService.getStudentProfileByCollegeId(collegeId)
+    // .map(ResponseEntity::ok)
+    // .orElseGet(() -> ResponseEntity.notFound().build());
+    // }
+    //
+    // // POST: create new student+profile
+    // @PostMapping
+    // public ResponseEntity<StudentProfileDTO> createProfile(@RequestBody
+    // StudentProfileDTO dto) {
+    // return ResponseEntity.ok(studentService.createStudentProfile(dto));
+    // }
+    //
+    // // PUT: update existing student+profile
+    // @PutMapping("/{collegeId}/profile")
+    // public ResponseEntity<StudentProfileDTO> updateProfile(
+    // @PathVariable String collegeId,
+    // @RequestBody StudentProfileDTO dto) {
+    // return studentService.updateStudentProfile(collegeId, dto)
+    // .map(ResponseEntity::ok)
+    // .orElseGet(() -> ResponseEntity.notFound().build());
+    // }
 
     @PostMapping
     public Student createStudent(@RequestBody Student student) {

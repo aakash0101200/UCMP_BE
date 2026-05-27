@@ -46,9 +46,9 @@ public class TimetableService {
     /**
      * Check if a proposed timetable entry would cause any conflicts.
      * Covers all 3 hard constraints from the plan:
-     *   #1 Faculty double-booking
-     *   #2 Room double-booking
-     *   #3 Section double-booking
+     * #1 Faculty double-booking
+     * #2 Room double-booking
+     * #3 Section double-booking
      * Also validates lab slot integrity (no crossing lunch break).
      *
      * @param excludeId pass the entry's own ID when updating, null when creating
@@ -61,9 +61,12 @@ public class TimetableService {
         List<String> conflicts = new ArrayList<>();
 
         // Fetch names for readable error messages
-        String sectionName = sectionRepo.findById(sectionId).map(Section::getSectionName).orElse("Section#" + sectionId);
-        String facultyName = facultyRepo.findById(facultyId).map(f -> f.getUser() != null ? f.getUser().getName() : "Faculty#" + facultyId).orElse("Faculty#" + facultyId);
-        String roomName    = roomRepo.findById(roomId).map(Room::getName).orElse("Room#" + roomId);
+        String sectionName = sectionRepo.findById(sectionId).map(Section::getSectionName)
+                .orElse("Section#" + sectionId);
+        String facultyName = facultyRepo.findById(facultyId)
+                .map(f -> f.getUser() != null ? f.getUser().getName() : "Faculty#" + facultyId)
+                .orElse("Faculty#" + facultyId);
+        String roomName = roomRepo.findById(roomId).map(Room::getName).orElse("Room#" + roomId);
 
         // Hard Constraint #1: Faculty double-booking
         boolean facultyBusy = timetableRepo
@@ -104,7 +107,7 @@ public class TimetableService {
 
         // Hard Constraint #4: Lab slot cannot cross lunch break (13:00–14:00)
         LocalTime lunchStart = LocalTime.of(13, 0);
-        LocalTime lunchEnd   = LocalTime.of(14, 0);
+        LocalTime lunchEnd = LocalTime.of(14, 0);
         if (startTime.isBefore(lunchEnd) && endTime.isAfter(lunchStart)) {
             conflicts.add("Class slot " + startTime + "–" + endTime
                     + " overlaps with the lunch break (13:00–14:00)");
@@ -232,7 +235,8 @@ public class TimetableService {
         existing.setSection(sectionRepo.findById(req.getSectionId()).orElseThrow());
         existing.setFaculty(facultyRepo.findById(req.getFacultyId()).orElseThrow());
         existing.setAcademicTerm(req.getAcademicTerm());
-        if (req.getEntryType() != null) existing.setEntryType(req.getEntryType());
+        if (req.getEntryType() != null)
+            existing.setEntryType(req.getEntryType());
 
         TimetableEntry saved = timetableRepo.save(existing);
 
@@ -305,12 +309,16 @@ public class TimetableService {
     public SubjectAssignment createAssignment(SubjectAssignmentRequest req) {
         if (assignmentRepo.existsByFacultyIdAndSubjectIdAndSectionIdAndAcademicTerm(
                 req.getFacultyId(), req.getSubjectId(), req.getSectionId(), req.getAcademicTerm())) {
-            throw new IllegalStateException("This faculty is already assigned this subject to this section in term " + req.getAcademicTerm());
+            throw new IllegalStateException(
+                    "This faculty is already assigned this subject to this section in term " + req.getAcademicTerm());
         }
 
-        Subject subject = subjectRepo.findById(req.getSubjectId()).orElseThrow(() -> new RuntimeException("Subject not found"));
-        Faculty faculty = facultyRepo.findById(req.getFacultyId()).orElseThrow(() -> new RuntimeException("Faculty not found"));
-        Section section = sectionRepo.findById(req.getSectionId()).orElseThrow(() -> new RuntimeException("Section not found"));
+        Subject subject = subjectRepo.findById(req.getSubjectId())
+                .orElseThrow(() -> new RuntimeException("Subject not found"));
+        Faculty faculty = facultyRepo.findById(req.getFacultyId())
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+        Section section = sectionRepo.findById(req.getSectionId())
+                .orElseThrow(() -> new RuntimeException("Section not found"));
 
         SubjectAssignment assignment = SubjectAssignment.builder()
                 .subject(subject)
@@ -333,7 +341,8 @@ public class TimetableService {
 
     @Transactional
     public void deleteAssignment(Long id) {
-        if (!assignmentRepo.existsById(id)) throw new RuntimeException("Assignment not found: " + id);
+        if (!assignmentRepo.existsById(id))
+            throw new RuntimeException("Assignment not found: " + id);
         assignmentRepo.deleteById(id);
     }
 
@@ -391,7 +400,8 @@ public class TimetableService {
         boolean alreadyOverrideCancelled = existingOverrides.stream()
                 .anyMatch(o -> o.getOverrideType() == OverrideType.CANCELLED);
         if (alreadyOverrideCancelled) {
-            throw new IllegalStateException("This class slot is already cancelled by admin for " + date + ". No additional cancellation is needed.");
+            throw new IllegalStateException("This class slot is already cancelled by admin for " + date
+                    + ". No additional cancellation is needed.");
         }
 
         ClassCancellation cancellation = ClassCancellation.builder()
@@ -413,8 +423,7 @@ public class TimetableService {
                     entry.getSubject().getCode(),
                     date,
                     entry.getStartTime() + " - " + entry.getEndTime(),
-                    reason
-            );
+                    reason);
             messagingTemplate.convertAndSend("/topic/cancellation/" + entry.getSection().getId(), event);
         } catch (Exception e) {
             System.err.println("Failed to broadcast ClassCancelledEvent: " + e.getMessage());
@@ -423,9 +432,9 @@ public class TimetableService {
         try {
             Announcements cancellationAnnouncement = new Announcements();
             cancellationAnnouncement.setTitle("Class Cancelled: " + entry.getSubject().getName());
-            cancellationAnnouncement.setDescription(String.format("The class on %s (%s) has been cancelled. Reason: %s", 
-                    date.toString(), 
-                    entry.getStartTime() + " - " + entry.getEndTime(), 
+            cancellationAnnouncement.setDescription(String.format("The class on %s (%s) has been cancelled. Reason: %s",
+                    date.toString(),
+                    entry.getStartTime() + " - " + entry.getEndTime(),
                     reason));
             cancellationAnnouncement.setAuthor(faculty.getUser() != null ? faculty.getUser().getName() : "Faculty");
             cancellationAnnouncement.setTime(java.time.LocalDateTime.now().toString());
@@ -436,12 +445,14 @@ public class TimetableService {
             announcementRepo.save(cancellationAnnouncement);
 
             // Broadcast to notifications channel
-            messagingTemplate.convertAndSend("/topic/notifications/section/" + entry.getSection().getId(), cancellationAnnouncement);
+            messagingTemplate.convertAndSend("/topic/notifications/section/" + entry.getSection().getId(),
+                    cancellationAnnouncement);
         } catch (Exception e) {
             System.err.println("Failed to create and broadcast cancellation announcement: " + e.getMessage());
         }
 
-        // Evict resolved schedules cache for this section and faculty on the cancelled date
+        // Evict resolved schedules cache for this section and faculty on the cancelled
+        // date
         try {
             org.springframework.cache.Cache sectionCache = cacheManager.getCache("resolved_section_schedules");
             if (sectionCache != null) {
@@ -461,13 +472,13 @@ public class TimetableService {
     @Transactional(readOnly = true)
     public List<FacultyAvailabilityResponse> getFacultyAvailability(
             LocalDate date, LocalTime startTime, LocalTime endTime, Long subjectId, String term) {
-        
+
         Subject subject = (subjectId != null) ? subjectRepo.findById(subjectId).orElse(null) : null;
         String dept = (subject != null) ? subject.getDepartment() : null;
 
         // Step 1: Pre-filter candidates by department or subject expertise
         List<Faculty> allFaculties = facultyRepo.findAll();
-        
+
         // Find who is assigned to teach this subject in subject_assignments
         Set<Long> directExpertiseFacultyIds = new java.util.HashSet<>();
         if (subjectId != null) {
@@ -481,32 +492,34 @@ public class TimetableService {
         for (Faculty faculty : allFaculties) {
             boolean departmentMatch = dept != null && dept.equalsIgnoreCase(faculty.getDepartment());
             boolean directExpertise = directExpertiseFacultyIds.contains(faculty.getId());
-            
+
             if (dept != null && !departmentMatch && !directExpertise) {
                 // Pre-filter out unrelated departments
                 continue;
             }
 
             // Step 2: Check if faculty is busy at [startTime, endTime] on date
-            List<TimetableEntryResponseDTO> resolvedSchedule = resolutionService.getResolvedScheduleForFaculty(faculty.getId(), date, term);
-            
+            List<TimetableEntryResponseDTO> resolvedSchedule = resolutionService
+                    .getResolvedScheduleForFaculty(faculty.getId(), date, term);
+
             boolean isBusy = false;
             String conflictDesc = "";
-            
+
             for (TimetableEntryResponseDTO slot : resolvedSchedule) {
                 if (slot.isCancelled()) {
                     continue;
                 }
                 if (timesOverlap(startTime, endTime, slot.getStartTime(), slot.getEndTime())) {
                     isBusy = true;
-                    conflictDesc = "Teaching " + slot.getSubjectName() + " (" + slot.getStartTime() + " - " + slot.getEndTime() + ")";
+                    conflictDesc = "Teaching " + slot.getSubjectName() + " (" + slot.getStartTime() + " - "
+                            + slot.getEndTime() + ")";
                     break;
                 }
             }
 
             // Step 3: Compute workload metrics
             long totalLoadSlots = timetableRepo.countByFacultyIdAndAcademicTerm(faculty.getId(), term);
-            
+
             // Step 4: Count recent substitutions
             long recentSubCount = overrideRepo.findByNewFacultyIdAndOverrideDate(faculty.getId(), date).stream()
                     .filter(o -> o.getOverrideType() == OverrideType.SUBSTITUTE)
@@ -537,15 +550,16 @@ public class TimetableService {
         // Sort by FREE first, then expertise, then workload
         results.sort((a, b) -> {
             if (!a.getStatus().equals(b.getStatus())) {
-                return a.getStatus().compareTo(b.getStatus()); // FREE comes before BUSY ("FREE".compareTo("BUSY") is negative)
+                return a.getStatus().compareTo(b.getStatus()); // FREE comes before BUSY ("FREE".compareTo("BUSY") is
+                                                               // negative)
             }
-            
+
             int rankA = getExpertiseRankPriority(a.getExpertiseRank());
             int rankB = getExpertiseRankPriority(b.getExpertiseRank());
             if (rankA != rankB) {
                 return Integer.compare(rankA, rankB);
             }
-            
+
             return Long.compare(a.getWeeklyWorkloadSlots(), b.getWeeklyWorkloadSlots());
         });
 
@@ -553,8 +567,10 @@ public class TimetableService {
     }
 
     private int getExpertiseRankPriority(String rank) {
-        if ("Direct Expertise".equals(rank)) return 1;
-        if ("Departmental Match".equals(rank)) return 2;
+        if ("Direct Expertise".equals(rank))
+            return 1;
+        if ("Departmental Match".equals(rank))
+            return 2;
         return 3;
     }
 
@@ -569,14 +585,16 @@ public class TimetableService {
                     .orElseThrow(() -> new RuntimeException("Timetable entry template not found"));
         }
 
-        // Dedup: prevent admin CANCELLED override if faculty already self-cancelled this slot
+        // Dedup: prevent admin CANCELLED override if faculty already self-cancelled
+        // this slot
         if (type == OverrideType.CANCELLED && templateEntry != null) {
             boolean alreadySelfCancelled = cancellationRepo
                     .findByTimetableEntryIdAndCancellationDate(templateEntry.getId(), date)
                     .filter(cc -> cc.isEffective())
                     .isPresent();
             if (alreadySelfCancelled) {
-                throw new IllegalStateException("This class slot is already cancelled by the faculty for " + date + ". No additional cancellation override is needed.");
+                throw new IllegalStateException("This class slot is already cancelled by the faculty for " + date
+                        + ". No additional cancellation override is needed.");
             }
         }
 
@@ -628,7 +646,8 @@ public class TimetableService {
         boolean isRecurring = dto.getIsRecurring() != null ? dto.getIsRecurring() : false;
         String recurringPattern = dto.getRecurringPattern();
 
-        OverrideStatus status = dto.getStatus() != null ? OverrideStatus.valueOf(dto.getStatus()) : OverrideStatus.ACTIVE;
+        OverrideStatus status = dto.getStatus() != null ? OverrideStatus.valueOf(dto.getStatus())
+                : OverrideStatus.ACTIVE;
 
         TimetableOverride override = TimetableOverride.builder()
                 .timetableEntry(templateEntry)
@@ -666,8 +685,7 @@ public class TimetableService {
                 sectionIds,
                 saved.getNewFaculty() != null ? saved.getNewFaculty().getId() : null,
                 saved.getOriginalFaculty() != null ? saved.getOriginalFaculty().getId() : null,
-                saved.getReason()
-        ));
+                saved.getReason()));
 
         return saved;
     }
@@ -687,8 +705,7 @@ public class TimetableService {
                 sectionIds,
                 null,
                 null,
-                "Override Cancelled/Reverted"
-        ));
+                "Override Cancelled/Reverted"));
 
         return saved;
     }
@@ -711,15 +728,20 @@ public class TimetableService {
         long selfCancelledCount = cancellationRepo.countEffectiveCancellationsByDate(today);
         long cancelledClassesCount = cancelledOverridesCount + selfCancelledCount;
 
-        // 4. Live ongoing lectures (lightweight DB count on templates — no per-section resolution)
-        // This is an approximation: it counts template entries currently in progress without
-        // accounting for overrides/cancellations, but is fast and close enough for a dashboard metric.
+        // 4. Live ongoing lectures (lightweight DB count on templates — no per-section
+        // resolution)
+        // This is an approximation: it counts template entries currently in progress
+        // without
+        // accounting for overrides/cancellations, but is fast and close enough for a
+        // dashboard metric.
         long liveOngoingLecturesCount = timetableRepo.countOngoingByDayAndTime(dayOfWeek, term, now);
 
-        // 5. Faculty Utilization Rate today (lightweight DB count — no per-faculty resolution)
+        // 5. Faculty Utilization Rate today (lightweight DB count — no per-faculty
+        // resolution)
         long busyFacultiesCount = timetableRepo.countDistinctFacultiesWithClassOnDay(dayOfWeek, term);
         long totalFaculties = facultyRepo.count();
-        double facultyUtilizationRate = totalFaculties == 0 ? 0.0 : Math.round(((double) busyFacultiesCount / totalFaculties * 100.0) * 10.0) / 10.0;
+        double facultyUtilizationRate = totalFaculties == 0 ? 0.0
+                : Math.round(((double) busyFacultiesCount / totalFaculties * 100.0) * 10.0) / 10.0;
 
         return AocsMetricsResponse.builder()
                 .activeOverridesCount(activeOverridesCount)
@@ -728,7 +750,7 @@ public class TimetableService {
                 .cancelledClassesCount(cancelledClassesCount)
                 .liveOngoingLecturesCount(liveOngoingLecturesCount)
                 .build();
-     }
+    }
 
     @Transactional(readOnly = true)
     public List<String> getDistinctAcademicTerms() {

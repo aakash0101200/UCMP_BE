@@ -1,12 +1,10 @@
 package com.ucmp.ucmp_backend.model;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
-
 
 @Entity
 @NoArgsConstructor
@@ -24,7 +22,7 @@ public class Announcements {
     private String author;
     private String type;
     private boolean isCompleted;
-    
+
     @Column(name = "section_id")
     private Long sectionId;
 
@@ -39,8 +37,6 @@ public class Announcements {
 
     @Column(name = "target_dept")
     private String targetDept;
-
-
 
     public String getLocation() {
         return location;
@@ -146,4 +142,3 @@ public class Announcements {
         this.targetDept = targetDept;
     }
 }
-

@@ -26,13 +26,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-
-
 
         // Extract JWT token from Authorization header
         final String jwt = jwtUtil.extractTokenFromRequest(request);
@@ -44,7 +42,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 collegeId = jwtUtil.extractCollegeId(jwt);
             } catch (Exception e) {
                 System.err.println("JWT token parsing failed: " + e.getMessage());
-                //  Don't block the request, just continue (unauthenticated)
+                // Don't block the request, just continue (unauthenticated)
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -56,9 +54,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             System.out.println("JWT Authorities: " + userDetails.getAuthorities());
 
             if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);

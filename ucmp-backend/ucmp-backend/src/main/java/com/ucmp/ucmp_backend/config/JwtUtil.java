@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.Set;
 
 @Component
-public class JwtUtil  {
+public class JwtUtil {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
     private final Key secretKey;
@@ -30,7 +30,7 @@ public class JwtUtil  {
      * so existing JWT tokens remain valid.
      */
     public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.expiration}") long expirationMs) {
+            @Value("${jwt.expiration}") long expirationMs) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-384");
             byte[] keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
@@ -85,7 +85,8 @@ public class JwtUtil  {
     public boolean validateToken(String token, String collegeId) {
         try {
             final String extractedCollegeId = extractCollegeId(token);
-            // Check if the extracted ID matches the expected ID AND the token is not expired
+            // Check if the extracted ID matches the expected ID AND the token is not
+            // expired
             return (extractedCollegeId.equals(collegeId) && !isTokenExpired(token));
         } catch (Exception e) {
             // Log the exception for debugging purposes.

@@ -35,17 +35,24 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/announcements/**").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/announcements/**")
+                        .authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/announcements/**")
+                        .hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/announcements/**")
+                        .hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/announcements/**")
+                        .hasAnyAuthority("ADMIN", "FACULTY")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/students/**").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/students/**").hasAuthority("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/students/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/students/**")
+                        .hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/students/**")
+                        .hasAuthority("ADMIN")
                         .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Timetable, Rooms, Subjects, Sections, Batches — reads open to authenticated users,
+                        // Timetable, Rooms, Subjects, Sections, Batches — reads open to authenticated
+                        // users,
                         // writes protected by @PreAuthorize("hasAuthority('ADMIN')") in controllers
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/timetable/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/rooms/**").authenticated()
@@ -55,8 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/batches/**").authenticated()
 
                         .requestMatchers("/", "/actuator/health", "/error").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
@@ -65,11 +71,13 @@ public class SecurityConfig {
     }
 
     /**
-     * This bean method now correctly receives its dependencies (JwtUtil, MyUserDetailsService, and UserRepository)
+     * This bean method now correctly receives its dependencies (JwtUtil,
+     * MyUserDetailsService, and UserRepository)
      * as method parameters. Spring's IoC container automatically provides them.
      */
     @Bean
-    public JwtRequestFilter jwtRequestFilter(JwtUtil jwtUtil, MyUserDetailsService userDetailsService, UserRepository userRepository) {
+    public JwtRequestFilter jwtRequestFilter(JwtUtil jwtUtil, MyUserDetailsService userDetailsService,
+            UserRepository userRepository) {
         return new JwtRequestFilter(jwtUtil, userDetailsService, userRepository);
     }
 
@@ -77,14 +85,14 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "https://ucmp.vercel.app",
-                "https://ucmp-khaki.vercel.app"
-        ));
+                "https://ucmp-khaki.vercel.app"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));

@@ -45,7 +45,7 @@ public class AttendanceController {
                 faculty.getId(),
                 request.getSectionId(),
                 request.getSubjectId(),
-                request.getMergedSectionIds(),    // null for REGULAR, list for MERGED
+                request.getMergedSectionIds(), // null for REGULAR, list for MERGED
                 request.getScheduledFacultyId(),
                 request.getLatitude(),
                 request.getLongitude(),
@@ -99,9 +99,9 @@ public class AttendanceController {
                             "sectionId", session.getSection().getId(),
                             "sectionName", session.getSection().getSectionName(),
                             "subjectId", session.getSubject() != null ? session.getSubject().getId() : null,
-                            "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
-                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
-                    )))
+                            "subjectName",
+                            session.getSubject() != null ? session.getSubject().getName() : "General Class",
+                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A")))
                     .orElse(ResponseEntity.notFound().build());
         } else {
             return attendanceService.findActiveSessionForFaculty(collegeId)
@@ -110,9 +110,9 @@ public class AttendanceController {
                             "sectionId", session.getSection().getId(),
                             "sectionName", session.getSection().getSectionName(),
                             "subjectId", session.getSubject() != null ? session.getSubject().getId() : null,
-                            "subjectName", session.getSubject() != null ? session.getSubject().getName() : "General Class",
-                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A"
-                    )))
+                            "subjectName",
+                            session.getSubject() != null ? session.getSubject().getName() : "General Class",
+                            "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A")))
                     .orElse(ResponseEntity.notFound().build());
         }
     }
@@ -135,7 +135,8 @@ public class AttendanceController {
     // ── Faculty: manually mark students present ────────────────────────────────
     /**
      * POST /api/attendance/session/{sessionId}/manual-mark
-     * Body: { "studentCollegeIds": ["22BCS001", "22BCS015"], "reason": "Dead phones" }
+     * Body: { "studentCollegeIds": ["22BCS001", "22BCS015"], "reason": "Dead
+     * phones" }
      * Query param: forceOverride=true to mark even after grace window
      *
      * Works during ACTIVE sessions, within grace window after ENDED,
@@ -257,7 +258,8 @@ public class AttendanceController {
                     m.put("sessionId", r.getAttendanceSession().getId());
                     m.put("sectionName", r.getAttendanceSession().getSection().getSectionName());
                     m.put("subjectName", r.getAttendanceSession().getSubject() != null
-                            ? r.getAttendanceSession().getSubject().getName() : "General");
+                            ? r.getAttendanceSession().getSubject().getName()
+                            : "General");
                     m.put("markedAt", r.getMarkedAt().toString());
                     m.put("markedBy", r.getMarkedBy().name());
                     return m;

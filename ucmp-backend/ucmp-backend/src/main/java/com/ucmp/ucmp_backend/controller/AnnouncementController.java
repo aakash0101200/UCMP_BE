@@ -26,8 +26,9 @@ public class AnnouncementController {
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
-        
-        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
+
+        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
             return "ALL";
         }
         return adminUser.getDepartment();
@@ -54,7 +55,8 @@ public class AnnouncementController {
         String dept = enforceAdminRoleAndDepartment(authentication);
         if (!"ALL".equals(dept)) {
             if (a.getSectionId() == null) {
-                return ResponseEntity.status(403).body("Access Denied: Departmental/Year-scoped Admins cannot create global announcements.");
+                return ResponseEntity.status(403)
+                        .body("Access Denied: Departmental/Year-scoped Admins cannot create global announcements.");
             }
             adminScopeValidator.enforceAccessToSection(authentication, a.getSectionId());
         }
@@ -69,7 +71,8 @@ public class AnnouncementController {
             Announcements existing = announcementRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Announcement not found"));
             if (existing.getSectionId() == null) {
-                return ResponseEntity.status(403).body("Access Denied: Departmental/Year-scoped Admins cannot delete global announcements.");
+                return ResponseEntity.status(403)
+                        .body("Access Denied: Departmental/Year-scoped Admins cannot delete global announcements.");
             }
             adminScopeValidator.enforceAccessToSection(authentication, existing.getSectionId());
         }
@@ -79,13 +82,15 @@ public class AnnouncementController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> update(Authentication authentication, @PathVariable Long id, @RequestBody Announcements a) {
+    public ResponseEntity<?> update(Authentication authentication, @PathVariable Long id,
+            @RequestBody Announcements a) {
         String dept = enforceAdminRoleAndDepartment(authentication);
         if (!"ALL".equals(dept)) {
             Announcements existing = announcementRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Announcement not found"));
             if (existing.getSectionId() == null || a.getSectionId() == null) {
-                return ResponseEntity.status(403).body("Access Denied: Departmental/Year-scoped Admins cannot manage global announcements.");
+                return ResponseEntity.status(403)
+                        .body("Access Denied: Departmental/Year-scoped Admins cannot manage global announcements.");
             }
             adminScopeValidator.enforceAccessToSection(authentication, existing.getSectionId());
             adminScopeValidator.enforceAccessToSection(authentication, a.getSectionId());

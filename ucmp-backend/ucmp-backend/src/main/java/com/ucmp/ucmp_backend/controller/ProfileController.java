@@ -135,7 +135,7 @@ public class ProfileController {
         String newPassword = payload.get("newPassword");
 
         if (oldPassword == null || oldPassword.trim().isEmpty() ||
-            newPassword == null || newPassword.trim().isEmpty()) {
+                newPassword == null || newPassword.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Both old and new passwords are required."));
         }
 
@@ -146,11 +146,12 @@ public class ProfileController {
             return ResponseEntity.badRequest().body(Map.of("message", "Incorrect current password."));
         }
 
-        // Validate password strength: min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+        // Validate password strength: min 8 chars, 1 uppercase, 1 lowercase, 1 number,
+        // 1 special char
         String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$";
         if (!newPassword.matches(regex)) {
-            return ResponseEntity.badRequest().body(Map.of("message", 
-                "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@#$%^&+=!)."));
+            return ResponseEntity.badRequest().body(Map.of("message",
+                    "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@#$%^&+=!)."));
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));

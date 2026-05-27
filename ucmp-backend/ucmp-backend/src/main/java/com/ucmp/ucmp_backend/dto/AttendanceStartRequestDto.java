@@ -6,8 +6,10 @@ import java.util.List;
 @Data
 public class AttendanceStartRequestDto {
     private Long sectionId;
-    private Long subjectId;               // Which subject is being taught
-    /** IDs of additional sections to include (for MERGED sessions). Null = REGULAR. */
+    private Long subjectId; // Which subject is being taught
+    /**
+     * IDs of additional sections to include (for MERGED sessions). Null = REGULAR.
+     */
     private List<Long> mergedSectionIds;
     private Long scheduledFacultyId;
     private Double latitude;

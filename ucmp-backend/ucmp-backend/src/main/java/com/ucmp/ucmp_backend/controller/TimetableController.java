@@ -32,8 +32,9 @@ public class TimetableController {
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
-        
-        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
+
+        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
             return "ALL";
         }
         return adminUser.getDepartment();
@@ -101,7 +102,8 @@ public class TimetableController {
      */
     @PostMapping("/entry")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createEntry(Authentication authentication, @Valid @RequestBody CreateTimetableEntryRequest request) {
+    public ResponseEntity<?> createEntry(Authentication authentication,
+            @Valid @RequestBody CreateTimetableEntryRequest request) {
         adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         try {
             TimetableEntryResponseDTO created = timetableService.createEntry(request);
@@ -151,7 +153,8 @@ public class TimetableController {
      */
     @PostMapping("/assignment")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createAssignment(Authentication authentication, @Valid @RequestBody SubjectAssignmentRequest request) {
+    public ResponseEntity<?> createAssignment(Authentication authentication,
+            @Valid @RequestBody SubjectAssignmentRequest request) {
         adminScopeValidator.enforceAccessToSection(authentication, request.getSectionId());
         try {
             SubjectAssignment result = timetableService.createAssignment(request);
@@ -194,7 +197,9 @@ public class TimetableController {
                 .subjectCode(a.getSubject() != null ? a.getSubject().getCode() : null)
                 .subjectName(a.getSubject() != null ? a.getSubject().getName() : null)
                 .facultyId(a.getFaculty() != null ? a.getFaculty().getId() : null)
-                .facultyName(a.getFaculty() != null && a.getFaculty().getUser() != null ? a.getFaculty().getUser().getName() : null)
+                .facultyName(
+                        a.getFaculty() != null && a.getFaculty().getUser() != null ? a.getFaculty().getUser().getName()
+                                : null)
                 .facultyCollegeId(a.getFaculty() != null ? a.getFaculty().getCollegeId() : null)
                 .sectionId(a.getSection() != null ? a.getSection().getId() : null)
                 .sectionName(a.getSection() != null ? a.getSection().getSectionName() : null)
@@ -232,8 +237,7 @@ public class TimetableController {
                     entryId,
                     request.getCancellationDate(),
                     request.getReason(),
-                    collegeId
-            );
+                    collegeId);
             return ResponseEntity.ok(cancellation);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -246,7 +250,8 @@ public class TimetableController {
             @PathVariable Long sectionId,
             @RequestParam String date,
             @RequestParam String term) {
-        return ResponseEntity.ok(resolutionService.getResolvedScheduleForSection(sectionId, java.time.LocalDate.parse(date), term));
+        return ResponseEntity
+                .ok(resolutionService.getResolvedScheduleForSection(sectionId, java.time.LocalDate.parse(date), term));
     }
 
     @GetMapping("/faculty/{facultyId}/resolved")
@@ -254,7 +259,8 @@ public class TimetableController {
             @PathVariable Long facultyId,
             @RequestParam String date,
             @RequestParam String term) {
-        return ResponseEntity.ok(resolutionService.getResolvedScheduleForFaculty(facultyId, java.time.LocalDate.parse(date), term));
+        return ResponseEntity
+                .ok(resolutionService.getResolvedScheduleForFaculty(facultyId, java.time.LocalDate.parse(date), term));
     }
 
     // AOCS: Live Availability
@@ -276,7 +282,8 @@ public class TimetableController {
     // AOCS: Overrides CRUD
     @PostMapping("/override")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createOverride(Authentication authentication, @RequestBody TimetableOverrideRequestDTO dto) {
+    public ResponseEntity<?> createOverride(Authentication authentication,
+            @RequestBody TimetableOverrideRequestDTO dto) {
         if (dto.getSectionIds() != null && !dto.getSectionIds().isEmpty()) {
             for (Long sId : dto.getSectionIds()) {
                 adminScopeValidator.enforceAccessToSection(authentication, sId);

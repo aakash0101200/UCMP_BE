@@ -37,7 +37,8 @@ public class AuthService {
 
     // Register a new user (Now restricted to Students only)
     public LoginResponse register(RegisterRequest request) {
-        // 🚨 NEW SECURITY CHECK: Prevent public registration for Faculty/Admin unless requested by an authenticated ADMIN
+        // 🚨 NEW SECURITY CHECK: Prevent public registration for Faculty/Admin unless
+        // requested by an authenticated ADMIN
         boolean attemptsToRegisterAsStaff = request.getRoles().stream()
                 .anyMatch(role -> role == RoleName.ADMIN || role == RoleName.FACULTY);
 
@@ -45,11 +46,12 @@ public class AuthService {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             boolean isCurrentAdmin = auth != null && auth.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
-            
+
             if (!isCurrentAdmin) {
                 // Fallback: manually parse JWT from current HTTP request
                 try {
-                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                            .getRequestAttributes();
                     if (attributes != null) {
                         HttpServletRequest httpServletRequest = attributes.getRequest();
                         String token = jwtUtil.extractTokenFromRequest(httpServletRequest);
@@ -57,7 +59,8 @@ public class AuthService {
                             String collegeId = jwtUtil.extractCollegeId(token);
                             if (collegeId != null && jwtUtil.validateToken(token, collegeId)) {
                                 User caller = userRepository.findByCollegeId(collegeId).orElse(null);
-                                if (caller != null && caller.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN)) {
+                                if (caller != null
+                                        && caller.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN)) {
                                     isCurrentAdmin = true;
                                 }
                             }
@@ -108,7 +111,6 @@ public class AuthService {
                         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
                 .collect(Collectors.toSet());
 
-
         // Create user
         User user = User.builder()
                 .collegeId(request.getCollegeId())
@@ -119,7 +121,6 @@ public class AuthService {
                 .department(request.getDepartment())
                 .yearScope(roles.stream().anyMatch(r -> r.getName() == RoleName.ADMIN) ? request.getYear() : null)
                 .build();
-
 
         userRepository.save(user);
 
@@ -166,7 +167,6 @@ public class AuthService {
 
             facultyRepository.save(faculty);
         }
-
 
         // Generate JWT
         Set<String> roleNames = user.getRoles().stream()
@@ -308,19 +308,19 @@ public class AuthService {
 
         ProfileResponse profileResponse = (profile != null)
                 ? ProfileResponse.builder()
-                .name(profile.getName())
-                .email(profile.getEmail())
-                .roles(List.copyOf(roleNames))
-                .collegeId(user.getCollegeId())
-                .yearScope(user.getYearScope())
-                .build()
+                        .name(profile.getName())
+                        .email(profile.getEmail())
+                        .roles(List.copyOf(roleNames))
+                        .collegeId(user.getCollegeId())
+                        .yearScope(user.getYearScope())
+                        .build()
                 : ProfileResponse.builder()
-                .name(user.getName())
-                .email(user.getEmail())
-                .roles(List.copyOf(roleNames))
-                .collegeId(user.getCollegeId())
-                .yearScope(user.getYearScope())
-                .build();
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .roles(List.copyOf(roleNames))
+                        .collegeId(user.getCollegeId())
+                        .yearScope(user.getYearScope())
+                        .build();
 
         return LoginResponse.builder()
                 .token(token)

@@ -6,8 +6,10 @@ import jakarta.validation.constraints.*;
 
 import java.util.List;
 
-@Getter @Setter
-@Data @Builder
+@Getter
+@Setter
+@Data
+@Builder
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -30,6 +32,5 @@ public class RegisterRequest {
     private String department;
     private String designation;
     private List<Long> sectionIds;
-
 
 }
