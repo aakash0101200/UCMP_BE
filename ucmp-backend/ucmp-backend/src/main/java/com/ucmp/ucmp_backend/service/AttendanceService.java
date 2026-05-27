@@ -344,12 +344,20 @@ public class AttendanceService {
             }
         }
 
-        // Code validation (current + previous 30-second window)
+        // Code validation (current + previous steps)
+        // We allow current code, last 2 previous codes, and next code (to tolerate clock drift, network lag, or server spin-up latency)
         long now = System.currentTimeMillis();
         String currentCode  = generateCodeForTime(session.getSecretSeed(), now);
-        String previousCode = generateCodeForTime(session.getSecretSeed(), now - 30000);
+        String prevCode1    = generateCodeForTime(session.getSecretSeed(), now - 30000);
+        String prevCode2    = generateCodeForTime(session.getSecretSeed(), now - 60000);
+        String nextCode     = generateCodeForTime(session.getSecretSeed(), now + 30000);
 
-        if (!submittedCode.equals(currentCode) && !submittedCode.equals(previousCode)) {
+        boolean isValid = submittedCode.equals(currentCode) ||
+                          submittedCode.equals(prevCode1) ||
+                          submittedCode.equals(prevCode2) ||
+                          submittedCode.equals(nextCode);
+
+        if (!isValid) {
             throw new RuntimeException("Code is invalid or has expired.");
         }
 
