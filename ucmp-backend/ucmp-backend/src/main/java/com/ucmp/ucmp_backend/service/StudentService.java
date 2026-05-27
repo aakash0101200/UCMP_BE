@@ -1,6 +1,4 @@
 package com.ucmp.ucmp_backend.service;
-import com.ucmp.ucmp_backend.dto.StudentProfileDTO;
-//import com.ucmp.ucmp_backend.mapper.StudentProfileMapper;
 import com.ucmp.ucmp_backend.model.Faculty;
 import com.ucmp.ucmp_backend.model.Profile;
 import com.ucmp.ucmp_backend.model.Student;

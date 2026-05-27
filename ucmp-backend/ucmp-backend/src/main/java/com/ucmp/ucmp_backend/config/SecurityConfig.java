@@ -35,9 +35,14 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/announcements/**").permitAll()
-                        .requestMatchers("/api/students/**").permitAll()
-                        .requestMatchers("/api/profile/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/announcements/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/announcements/**").hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/students/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/students/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/students/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/ws/**").permitAll()
 
                         // Timetable, Rooms, Subjects, Sections, Batches — reads open to authenticated users,

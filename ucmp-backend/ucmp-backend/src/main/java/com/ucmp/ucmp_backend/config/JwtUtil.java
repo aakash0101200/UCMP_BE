@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Set;
@@ -16,6 +20,7 @@ import java.util.Set;
 @Component
 public class JwtUtil  {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
     private final Key secretKey;
     private final long expirationMs;
 
@@ -26,14 +31,13 @@ public class JwtUtil  {
      */
     public JwtUtil(@Value("${jwt.secret}") String secret,
                    @Value("${jwt.expiration}") long expirationMs) {
-        // Pad the secret to at least 32 bytes (required for HS256)
-        byte[] keyBytes = secret.getBytes();
-        if (keyBytes.length < 32) {
-            byte[] padded = new byte[32];
-            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
-            keyBytes = padded;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-384");
+            byte[] keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+            this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize JWT secret key", e);
         }
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = expirationMs;
     }
 
@@ -85,7 +89,7 @@ public class JwtUtil  {
             return (extractedCollegeId.equals(collegeId) && !isTokenExpired(token));
         } catch (Exception e) {
             // Log the exception for debugging purposes.
-            System.err.println("JWT validation failed: " + e.getMessage());
+            log.error("JWT validation failed: {}", e.getMessage());
             return false;
         }
     }

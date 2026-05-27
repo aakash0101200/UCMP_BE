@@ -16,29 +16,33 @@ public class AdminScopeValidator {
 
     /**
      * Retrieves the department scope for the logged-in admin.
-     * Returns "ALL" for super admins, and the specific department name for scoped admins.
+     * Returns "ALL" for super admins, and the specific department name for scoped
+     * admins.
      */
     public String getAdminDepartment(Authentication authentication) {
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
-        
-        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
+
+        if ("ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment())) {
             return "ALL";
         }
         return adminUser.getDepartment();
     }
 
     /**
-     * Enforces that the logged-in admin has access to the target department and year.
+     * Enforces that the logged-in admin has access to the target department and
+     * year.
      * Throws RuntimeException if not authorized.
      */
     public void enforceAccess(Authentication authentication, String targetDept, Integer targetYear) {
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
-        
-        boolean isSuper = "ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment());
+
+        boolean isSuper = "ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment());
         if (isSuper) {
             return;
         }
@@ -60,13 +64,15 @@ public class AdminScopeValidator {
      * Enforces access to a section.
      */
     public void enforceAccessToSection(Authentication authentication, Long sectionId) {
-        if (sectionId == null) return;
-        
+        if (sectionId == null)
+            return;
+
         String collegeId = authentication.getName();
         User adminUser = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("Logged in user is not found"));
-        
-        boolean isSuper = "ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null || "Administration".equalsIgnoreCase(adminUser.getDepartment());
+
+        boolean isSuper = "ADMIN_001".equals(collegeId) || adminUser.getDepartment() == null
+                || "Administration".equalsIgnoreCase(adminUser.getDepartment());
         if (isSuper) {
             return;
         }
@@ -84,8 +90,9 @@ public class AdminScopeValidator {
      * Enforces access to a student.
      */
     public void enforceAccessToStudent(Authentication authentication, Student student) {
-        if (student == null) return;
-        
+        if (student == null)
+            return;
+
         String dept = student.getBatch() != null ? student.getBatch().getBatchName() : null;
         Integer year = null;
         try {

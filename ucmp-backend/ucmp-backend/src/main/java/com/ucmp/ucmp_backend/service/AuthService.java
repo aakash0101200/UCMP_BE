@@ -74,6 +74,27 @@ public class AuthService {
         }
 
         // ... Keep all your existing checks below this line ...
+        // Role-specific validation checks
+        if (request.getRoles().contains(RoleName.STUDENT)) {
+            if (request.getRollNumber() == null || request.getRollNumber().trim().isEmpty()) {
+                throw new RuntimeException("Roll number is required for Student registration");
+            }
+            if (request.getYear() == null) {
+                throw new RuntimeException("Year is required for Student registration");
+            }
+            if (request.getBranch() == null || request.getBranch().trim().isEmpty()) {
+                throw new RuntimeException("Branch is required for Student registration");
+            }
+        }
+        if (request.getRoles().contains(RoleName.FACULTY)) {
+            if (request.getDepartment() == null || request.getDepartment().trim().isEmpty()) {
+                throw new RuntimeException("Department is required for Faculty registration");
+            }
+            if (request.getDesignation() == null || request.getDesignation().trim().isEmpty()) {
+                throw new RuntimeException("Designation is required for Faculty registration");
+            }
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
