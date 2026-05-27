@@ -172,40 +172,63 @@ public class AdminController {
 
     @PutMapping("/users/{collegeId}/reset-password")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<String> resetPassword(Authentication authentication, @PathVariable String collegeId) {
+    public ResponseEntity<?> resetPassword(Authentication authentication, @PathVariable String collegeId) {
+        String callerCollegeId = authentication.getName();
         String dept = enforceAdminRoleAndDepartment(authentication);
         User user = userRepository.findByCollegeId(collegeId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!"ALL".equals(dept)) {
-            boolean sameDept = false;
-            if (user.getFaculty() != null && dept.equalsIgnoreCase(user.getFaculty().getDepartment())) {
-                sameDept = true;
+        boolean targetIsAdmin = user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
+
+        if (targetIsAdmin) {
+            // Only a Super Admin ("ALL" dept) can reset an Admin's password
+            if (!"ALL".equals(dept)) {
+                throw new RuntimeException("Access Denied: Only Super Admins can reset Administrator passwords.");
             }
-            if (user.getStudent() != null && user.getStudent().getBatch() != null && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
-                User adminUser = userRepository.findByCollegeId(authentication.getName()).orElseThrow();
-                if (adminUser.getYearScope() == null || String.valueOf(adminUser.getYearScope()).equals(user.getStudent().getYear())) {
+            // Block resetting the primary Super Admin (ADMIN_001) unless they are doing it themselves
+            if ("ADMIN_001".equals(collegeId) && !"ADMIN_001".equals(callerCollegeId)) {
+                throw new RuntimeException("Access Denied: The primary Super Admin password cannot be reset by other administrators.");
+            }
+        } else {
+            // Check regular admin scope for student/faculty
+            if (!"ALL".equals(dept)) {
+                boolean sameDept = false;
+                if (user.getFaculty() != null && dept.equalsIgnoreCase(user.getFaculty().getDepartment())) {
                     sameDept = true;
                 }
-            }
-            if (!sameDept) {
-                throw new RuntimeException("Access Denied: You cannot modify users outside your department and year scope.");
+                if (user.getStudent() != null && user.getStudent().getBatch() != null && dept.equalsIgnoreCase(user.getStudent().getBatch().getBatchName())) {
+                    User adminUser = userRepository.findByCollegeId(callerCollegeId).orElseThrow();
+                    if (adminUser.getYearScope() == null || String.valueOf(adminUser.getYearScope()).equals(user.getStudent().getYear())) {
+                        sameDept = true;
+                    }
+                }
+                if (!sameDept) {
+                    throw new RuntimeException("Access Denied: You cannot modify users outside your department and year scope.");
+                }
             }
         }
 
-        String defaultPassword = "User@123";
-        if (user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN)) {
-            defaultPassword = "Admin@123";
-        } else if (user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.FACULTY)) {
-            defaultPassword = "Faculty@123";
-        } else if (user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.STUDENT)) {
-            defaultPassword = "Student@123";
-        }
-
-        user.setPassword(passwordEncoder.encode(defaultPassword));
+        // Generate lookalike-safe random temporary password
+        String tempPassword = generateRandomAlphanumericPassword(8);
+        user.setPassword(passwordEncoder.encode(tempPassword));
         userRepository.save(user);
-        return ResponseEntity.ok("Password reset successfully. Default password is: " + defaultPassword);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Password reset successfully.",
+            "temporaryPassword", tempPassword
+        ));
     }
+
+    private String generateRandomAlphanumericPassword(int length) {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; // Omitted I, O, 0, l, 1
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
 
     @PutMapping("/users/{collegeId}/student-section")
     @PreAuthorize("hasAuthority('ADMIN')")

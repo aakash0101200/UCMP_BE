@@ -15,11 +15,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,6 +34,7 @@ public class ProfileController {
     private final StudentRepository studentRepository;
     private final FacultyRepository facultyRepository;
     private final ProfileRepository profileRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Retrieves the profile of the currently authenticated user.
@@ -98,6 +101,8 @@ public class ProfileController {
                 .name(user.getName())
                 .email(user.getEmail())
                 .profilePictureUrl(profile != null ? profile.getProfilePictureUrl() : null)
+                .phoneNumber(profile != null ? profile.getPhoneNumber() : null)
+                .address(profile != null ? profile.getAddress() : null)
                 .roles(roleNames)
                 .department(user.getDepartment())
                 .yearScope(user.getYearScope())
@@ -117,5 +122,40 @@ public class ProfileController {
         String collegeId = authentication.getName();
         ProfileResponse updatedProfile = profileService.updateProfile(collegeId, request);
         return ResponseEntity.ok(updatedProfile);
+    }
+
+    /**
+     * Allows authenticated user to update their own password with strength checks.
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(Authentication authentication,
+            @RequestBody Map<String, String> payload) {
+        String collegeId = authentication.getName();
+        String oldPassword = payload.get("oldPassword");
+        String newPassword = payload.get("newPassword");
+
+        if (oldPassword == null || oldPassword.trim().isEmpty() ||
+            newPassword == null || newPassword.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Both old and new passwords are required."));
+        }
+
+        User user = userRepository.findByCollegeId(collegeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Incorrect current password."));
+        }
+
+        // Validate password strength: min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$";
+        if (!newPassword.matches(regex)) {
+            return ResponseEntity.badRequest().body(Map.of("message", 
+                "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@#$%^&+=!)."));
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully."));
     }
 }
