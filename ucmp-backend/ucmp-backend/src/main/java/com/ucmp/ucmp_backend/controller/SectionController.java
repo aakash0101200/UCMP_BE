@@ -1,9 +1,11 @@
 package com.ucmp.ucmp_backend.controller;
 
 import com.ucmp.ucmp_backend.model.Section;
+import com.ucmp.ucmp_backend.model.Student;
 import com.ucmp.ucmp_backend.dto.SectionDTO;
 import com.ucmp.ucmp_backend.repository.SectionRepository;
 import com.ucmp.ucmp_backend.repository.BatchRepository;
+import com.ucmp.ucmp_backend.repository.StudentRepository;
 import com.ucmp.ucmp_backend.validator.AdminScopeValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/sections")
@@ -23,6 +27,7 @@ public class SectionController {
     private final SectionRepository sectionRepository;
     private final BatchRepository batchRepository;
     private final AdminScopeValidator adminScopeValidator;
+    private final StudentRepository studentRepository;
 
     @GetMapping
     public ResponseEntity<List<SectionDTO>> getAllSections() {
@@ -33,11 +38,33 @@ public class SectionController {
         return ResponseEntity.ok(sections);
     }
 
+    // ─── Quick-Connect: List students in a section (lightweight) ─────────────
+    @GetMapping("/{id}/students")
+    public ResponseEntity<?> getStudentsInSection(@PathVariable Long id) {
+        if (!sectionRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        List<Map<String, String>> students = studentRepository.findBySectionId(id).stream()
+                .map(s -> Map.of(
+                        "collegeId", s.getCollegeId() != null ? s.getCollegeId() : "",
+                        "name", s.getName() != null ? s.getName() : "",
+                        "rollNumber", s.getRollNumber() != null ? s.getRollNumber() : ""))
+                .toList();
+        return ResponseEntity.ok(students);
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> createSection(
             Authentication authentication,
             @RequestBody SectionCreationDTO dto) {
+
+        if (dto.getSectionName() == null || dto.getSectionName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Section name is required.");
+        }
+        if (dto.getYear() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Year is required.");
+        }
 
         com.ucmp.ucmp_backend.model.Batch batch = batchRepository.findById(dto.getBatchId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -49,8 +76,15 @@ public class SectionController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
         }
 
+        Optional<Section> existing = sectionRepository.findBySectionNameIgnoreCaseAndBatchIdAndYear(
+                dto.getSectionName().trim(), batch.getId(), dto.getYear());
+        if (existing.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Section with name '" + dto.getSectionName().trim() + "' already exists for this batch and year.");
+        }
+
         Section section = new Section();
-        section.setSectionName(dto.getSectionName());
+        section.setSectionName(dto.getSectionName().trim());
         section.setYear(dto.getYear());
         section.setBatch(batch);
 

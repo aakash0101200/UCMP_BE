@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/announcements")
@@ -21,6 +23,8 @@ public class AnnouncementController {
     private final SectionRepository sectionRepository;
     private final AnnouncementRepository announcementRepository;
     private final AdminScopeValidator adminScopeValidator;
+    private final FacultyRepository facultyRepository;
+    private final StudentRepository studentRepository;
 
     private String enforceAdminRoleAndDepartment(Authentication authentication) {
         String collegeId = authentication.getName();
@@ -97,5 +101,99 @@ public class AnnouncementController {
         }
         a.setId(id);
         return ResponseEntity.ok(service.update(id, a));
+    }
+
+    // ─── Quick-Connect: Faculty sends a message to section or individual student ──
+    @PostMapping("/message")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> sendMessage(Authentication authentication, @RequestBody Announcements msg) {
+        String collegeId = authentication.getName();
+        Faculty faculty = facultyRepository.findByCollegeId(collegeId).orElse(null);
+        if (faculty == null) {
+            return ResponseEntity.status(403).body("Faculty profile not found.");
+        }
+
+        // Validate faculty teaches in the target section
+        if (msg.getSectionId() != null) {
+            boolean teachesSection = faculty.getSections().stream()
+                    .anyMatch(s -> s.getId().equals(msg.getSectionId()));
+            if (!teachesSection) {
+                return ResponseEntity.status(403)
+                        .body("You do not teach in the specified section.");
+            }
+        }
+
+        // Enforce message metadata
+        String userName = faculty.getUser() != null ? faculty.getUser().getName() : collegeId;
+        msg.setAuthor(userName);
+        msg.setTime(Instant.now().toString());
+        if (msg.getType() == null || msg.getType().isBlank()) {
+            msg.setType("MESSAGE");
+        }
+        msg.setCompleted(false);
+        msg.setTargetRole(collegeId); // Store faculty collegeId in targetRole
+
+        return ResponseEntity.ok(service.add(msg));
+    }
+
+    // ─── Quick-Connect: Student acknowledges a message ─────────────────────────
+    @PatchMapping("/{id}/ack")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
+    public ResponseEntity<?> acknowledge(@PathVariable Long id, Authentication authentication) {
+        Announcements ann = announcementRepository.findById(id).orElse(null);
+        if (ann == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ann.setCompleted(true);
+        announcementRepository.save(ann);
+        return ResponseEntity.ok(Map.of("status", "acknowledged", "id", id));
+    }
+
+    // ─── Quick-Connect: Student replies to a faculty message ───────────────────
+    @PatchMapping("/{id}/reply")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'FACULTY', 'ADMIN')")
+    public ResponseEntity<?> replyToMessage(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        String collegeId = authentication.getName();
+        String replyText = body.getOrDefault("reply", "").trim();
+        if (replyText.isEmpty() || replyText.length() > 500) {
+            return ResponseEntity.badRequest().body("Reply must be between 1 and 500 characters.");
+        }
+
+        Announcements parent = announcementRepository.findById(id).orElse(null);
+        if (parent == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Create a reply as a new announcement linked to the parent's context
+        User user = userRepository.findByCollegeId(collegeId).orElse(null);
+        String authorName = user != null ? user.getName() : collegeId;
+
+        // Determine recipient (faculty college ID) from parent targetRole, fallback to username lookup
+        String facultyCollegeId = parent.getTargetRole();
+        if (facultyCollegeId == null || facultyCollegeId.trim().isEmpty()) {
+            facultyCollegeId = userRepository.findAll().stream()
+                    .filter(u -> u.getName().equalsIgnoreCase(parent.getAuthor()))
+                    .findFirst()
+                    .map(User::getCollegeId)
+                    .orElse(parent.getAuthor());
+        }
+
+        Announcements reply = new Announcements();
+        reply.setTitle("Re: " + (parent.getTitle() != null ? parent.getTitle() : "Message"));
+        reply.setDescription(replyText);
+        reply.setAuthor(authorName);
+        reply.setTime(Instant.now().toString());
+        reply.setType("REPLY");
+        reply.setSectionId(parent.getSectionId());
+        reply.setStudentCollegeId(facultyCollegeId); // Route reply back to faculty collegeId
+        reply.setTargetRole(collegeId); // Store student collegeId in targetRole
+        reply.setLocation(String.valueOf(parent.getId())); // Link reply to parent message by storing parent ID in location
+        reply.setCompleted(false);
+
+        Announcements saved = announcementRepository.save(reply);
+        return ResponseEntity.ok(saved);
     }
 }

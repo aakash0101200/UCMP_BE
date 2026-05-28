@@ -57,14 +57,33 @@ public class AnnouncementService {
         if (isAdmin) {
             boolean isSuper = "ADMIN_001".equals(collegeId) || user.getDepartment() == null
                     || "Administration".equalsIgnoreCase(user.getDepartment());
+
+            List<Announcements> adminFiltered = all.stream()
+                    .filter(a -> {
+                        // ── OPERATIONAL_LOG scope: admin gets monthly reports later, not live logs ──
+                        if ("ATTENDANCE_WARNING".equalsIgnoreCase(a.getType()) ||
+                                "ATTENDANCE_SESSION".equalsIgnoreCase(a.getType())) {
+                            return false;
+                        }
+                        // ── PRIVATE_THREAD scope: faculty↔student messages are never admin-visible ──
+                        if ("MESSAGE".equalsIgnoreCase(a.getType()) ||
+                                "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()) ||
+                                "REPLY".equalsIgnoreCase(a.getType())) {
+                            return false;
+                        }
+                        // ── SYSTEM_BROADCAST scope: announcements, timetable, schedule visible ──
+                        return true;
+                    })
+                    .toList();
+
             if (isSuper) {
-                return all;
+                return adminFiltered;
             }
 
             final String dept = user.getDepartment();
             final Integer yearScope = user.getYearScope();
 
-            return all.stream()
+            return adminFiltered.stream()
                     .filter(a -> {
                         if (collegeId.equals(a.getAuthor()))
                             return true;
@@ -92,8 +111,28 @@ public class AnnouncementService {
 
             return all.stream()
                     .filter(a -> {
-                        if (collegeId.equals(a.getAuthor()))
+                        // Suppress low-level user operation notifications for faculty
+                        if ("ATTENDANCE_WARNING".equalsIgnoreCase(a.getType()) ||
+                                "ATTENDANCE_SESSION".equalsIgnoreCase(a.getType())) {
+                            return false;
+                        }
+
+                        // 1. Messages sent by this faculty (where targetRole = facultyCollegeId)
+                        if (("MESSAGE".equalsIgnoreCase(a.getType()) || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()))
+                                && collegeId.equalsIgnoreCase(a.getTargetRole())) {
                             return true;
+                        }
+
+                        // 2. Replies addressed to this faculty (where studentCollegeId = facultyCollegeId)
+                        if ("REPLY".equalsIgnoreCase(a.getType()) && collegeId.equalsIgnoreCase(a.getStudentCollegeId())) {
+                            return true;
+                        }
+
+                        // For other message/reply types that were not sent by or addressed to this faculty, hide them
+                        if ("MESSAGE".equalsIgnoreCase(a.getType()) || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()) || "REPLY".equalsIgnoreCase(a.getType())) {
+                            return false;
+                        }
+
                         if (a.getStudentCollegeId() != null)
                             return false;
                         if (a.getTargetRole() != null && !a.getTargetRole().equalsIgnoreCase("FACULTY"))
@@ -114,10 +153,25 @@ public class AnnouncementService {
 
             return all.stream()
                     .filter(a -> {
-                        if (collegeId.equalsIgnoreCase(a.getStudentCollegeId()))
+                        // 1. Replies sent by this student (where type = REPLY && targetRole = studentCollegeId)
+                        if ("REPLY".equalsIgnoreCase(a.getType()) && collegeId.equalsIgnoreCase(a.getTargetRole())) {
                             return true;
-                        if (sectionId != null && sectionId.equals(a.getSectionId()))
+                        }
+
+                        // 2. Messages directly addressed to this student (studentCollegeId = student's collegeId)
+                        if (collegeId.equalsIgnoreCase(a.getStudentCollegeId())) {
                             return true;
+                        }
+
+                        // 3. Section broadcasts (excluding REPLY types from other students in the section)
+                        if (sectionId != null && sectionId.equals(a.getSectionId())) {
+                            if ("REPLY".equalsIgnoreCase(a.getType())) {
+                                return false; // Do not show other students' replies
+                            }
+                            return true;
+                        }
+
+                        // 4. Global announcements (no section, no student target)
                         if (a.getSectionId() == null && a.getStudentCollegeId() == null) {
                             if (a.getTargetRole() != null && !a.getTargetRole().equalsIgnoreCase("STUDENT"))
                                 return false;

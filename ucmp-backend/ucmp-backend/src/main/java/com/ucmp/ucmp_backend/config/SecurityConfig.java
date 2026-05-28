@@ -43,6 +43,8 @@ public class SecurityConfig {
                         .hasAnyAuthority("ADMIN", "FACULTY")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/announcements/**")
                         .hasAnyAuthority("ADMIN", "FACULTY")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/announcements/**")
+                        .authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/students/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/students/**")
                         .hasAuthority("ADMIN")
@@ -93,7 +95,7 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "https://ucmp.vercel.app",
                 "https://ucmp-khaki.vercel.app"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
