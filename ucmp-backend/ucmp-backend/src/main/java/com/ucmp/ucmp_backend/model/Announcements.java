@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
+import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
@@ -22,6 +23,9 @@ public class Announcements {
     private String author;
     private String type;
     private boolean isCompleted;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "section_id")
     private Long sectionId;
@@ -140,5 +144,13 @@ public class Announcements {
 
     public void setTargetDept(String targetDept) {
         this.targetDept = targetDept;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

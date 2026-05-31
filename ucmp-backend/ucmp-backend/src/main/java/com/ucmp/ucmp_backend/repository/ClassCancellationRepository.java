@@ -30,11 +30,11 @@ public interface ClassCancellationRepository extends JpaRepository<ClassCancella
     // All effective cancellations for a section on a given date
     // Used by schedule display — shows red "Cancelled" banners
     @Query("""
-        SELECT cc FROM ClassCancellation cc
-        WHERE cc.timetableEntry.section.id = :sectionId
-        AND cc.cancellationDate = :date
-        AND cc.approvalStatus IN ('AUTO_APPROVED', 'APPROVED')
-    """)
+                SELECT cc FROM ClassCancellation cc
+                WHERE cc.timetableEntry.section.id = :sectionId
+                AND cc.cancellationDate = :date
+                AND cc.approvalStatus IN ('AUTO_APPROVED', 'APPROVED')
+            """)
     List<ClassCancellation> findEffectiveCancellationsForSectionOnDate(
             @Param("sectionId") Long sectionId,
             @Param("date") LocalDate date);
@@ -44,11 +44,11 @@ public interface ClassCancellationRepository extends JpaRepository<ClassCancella
 
     // All cancellations for a section this term (for reporting)
     @Query("""
-        SELECT cc FROM ClassCancellation cc
-        WHERE cc.timetableEntry.section.id = :sectionId
-        AND cc.cancellationDate BETWEEN :from AND :to
-        ORDER BY cc.cancellationDate DESC
-    """)
+                SELECT cc FROM ClassCancellation cc
+                WHERE cc.timetableEntry.section.id = :sectionId
+                AND cc.cancellationDate BETWEEN :from AND :to
+                ORDER BY cc.cancellationDate DESC
+            """)
     List<ClassCancellation> findBySectionAndDateRange(
             @Param("sectionId") Long sectionId,
             @Param("from") LocalDate from,
@@ -56,20 +56,27 @@ public interface ClassCancellationRepository extends JpaRepository<ClassCancella
 
     // All cancellations by a faculty member (for HOD audit)
     @Query("""
-        SELECT cc FROM ClassCancellation cc
-        WHERE cc.cancelledBy.id = :facultyId
-        AND cc.cancellationDate BETWEEN :from AND :to
-        ORDER BY cc.cancellationDate DESC
-    """)
+                SELECT cc FROM ClassCancellation cc
+                WHERE cc.cancelledBy.id = :facultyId
+                AND cc.cancellationDate BETWEEN :from AND :to
+                ORDER BY cc.cancellationDate DESC
+            """)
     List<ClassCancellation> findByFacultyAndDateRange(
             @Param("facultyId") Long facultyId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
 
     @Query("""
-        SELECT COUNT(cc) FROM ClassCancellation cc
-        WHERE cc.cancellationDate = :date
-        AND cc.approvalStatus IN ('AUTO_APPROVED', 'APPROVED')
-    """)
+                SELECT COUNT(cc) FROM ClassCancellation cc
+                WHERE cc.cancellationDate = :date
+                AND cc.approvalStatus IN ('AUTO_APPROVED', 'APPROVED')
+            """)
     long countEffectiveCancellationsByDate(@Param("date") LocalDate date);
+
+    // ── Auto-cleanup: remove stale past cancellations ───────────────────────
+    // Cancellations older than `cutoffDate` are display-only history;
+    // they have zero effect on attendance calculations.
+    @Modifying
+    @Query("DELETE FROM ClassCancellation cc WHERE cc.cancellationDate < :cutoffDate")
+    int deleteOlderThan(@Param("cutoffDate") LocalDate cutoffDate);
 }

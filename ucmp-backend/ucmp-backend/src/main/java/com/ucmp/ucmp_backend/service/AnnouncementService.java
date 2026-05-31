@@ -118,18 +118,23 @@ public class AnnouncementService {
                         }
 
                         // 1. Messages sent by this faculty (where targetRole = facultyCollegeId)
-                        if (("MESSAGE".equalsIgnoreCase(a.getType()) || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()))
+                        if (("MESSAGE".equalsIgnoreCase(a.getType())
+                                || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()))
                                 && collegeId.equalsIgnoreCase(a.getTargetRole())) {
                             return true;
                         }
 
-                        // 2. Replies addressed to this faculty (where studentCollegeId = facultyCollegeId)
-                        if ("REPLY".equalsIgnoreCase(a.getType()) && collegeId.equalsIgnoreCase(a.getStudentCollegeId())) {
+                        // 2. Replies addressed to this faculty (where studentCollegeId =
+                        // facultyCollegeId)
+                        if ("REPLY".equalsIgnoreCase(a.getType())
+                                && collegeId.equalsIgnoreCase(a.getStudentCollegeId())) {
                             return true;
                         }
 
-                        // For other message/reply types that were not sent by or addressed to this faculty, hide them
-                        if ("MESSAGE".equalsIgnoreCase(a.getType()) || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType()) || "REPLY".equalsIgnoreCase(a.getType())) {
+                        // For other message/reply types that were not sent by or addressed to this
+                        // faculty, hide them
+                        if ("MESSAGE".equalsIgnoreCase(a.getType()) || "PRIORITY_MESSAGE".equalsIgnoreCase(a.getType())
+                                || "REPLY".equalsIgnoreCase(a.getType())) {
                             return false;
                         }
 
@@ -153,17 +158,20 @@ public class AnnouncementService {
 
             return all.stream()
                     .filter(a -> {
-                        // 1. Replies sent by this student (where type = REPLY && targetRole = studentCollegeId)
+                        // 1. Replies sent by this student (where type = REPLY && targetRole =
+                        // studentCollegeId)
                         if ("REPLY".equalsIgnoreCase(a.getType()) && collegeId.equalsIgnoreCase(a.getTargetRole())) {
                             return true;
                         }
 
-                        // 2. Messages directly addressed to this student (studentCollegeId = student's collegeId)
+                        // 2. Messages directly addressed to this student (studentCollegeId = student's
+                        // collegeId)
                         if (collegeId.equalsIgnoreCase(a.getStudentCollegeId())) {
                             return true;
                         }
 
-                        // 3. Section broadcasts (excluding REPLY types from other students in the section)
+                        // 3. Section broadcasts (excluding REPLY types from other students in the
+                        // section)
                         if (sectionId != null && sectionId.equals(a.getSectionId())) {
                             if ("REPLY".equalsIgnoreCase(a.getType())) {
                                 return false; // Do not show other students' replies
