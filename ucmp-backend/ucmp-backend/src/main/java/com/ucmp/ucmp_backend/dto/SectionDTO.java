@@ -12,9 +12,10 @@ public class SectionDTO {
     private String sectionName;
     private Integer year;
     private Long batchId;
+    private String batchName;
 
     public SectionDTO(Long id, String sectionName) {
         this.id = id;
         this.sectionName = sectionName;
     }
-}
+}

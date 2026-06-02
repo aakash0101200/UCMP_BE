@@ -25,5 +25,10 @@ public interface SubjectAssignmentRepository extends JpaRepository<SubjectAssign
         Long facultyId, Long subjectId, Long sectionId, String academicTerm
     );
 
+    // Check if a subject is already assigned to any faculty for a specific section in a term
+    boolean existsBySubjectIdAndSectionIdAndAcademicTerm(
+        Long subjectId, Long sectionId, String academicTerm
+    );
+
     List<SubjectAssignment> findBySubjectId(Long subjectId);
 }

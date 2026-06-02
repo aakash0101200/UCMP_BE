@@ -307,10 +307,10 @@ public class TimetableService {
 
     @Transactional
     public SubjectAssignment createAssignment(SubjectAssignmentRequest req) {
-        if (assignmentRepo.existsByFacultyIdAndSubjectIdAndSectionIdAndAcademicTerm(
-                req.getFacultyId(), req.getSubjectId(), req.getSectionId(), req.getAcademicTerm())) {
+        if (assignmentRepo.existsBySubjectIdAndSectionIdAndAcademicTerm(
+                req.getSubjectId(), req.getSectionId(), req.getAcademicTerm())) {
             throw new IllegalStateException(
-                    "This faculty is already assigned this subject to this section in term " + req.getAcademicTerm());
+                    "This subject is already assigned to a faculty for this section in term " + req.getAcademicTerm());
         }
 
         Subject subject = subjectRepo.findById(req.getSubjectId())
@@ -344,6 +344,50 @@ public class TimetableService {
         if (!assignmentRepo.existsById(id))
             throw new RuntimeException("Assignment not found: " + id);
         assignmentRepo.deleteById(id);
+    }
+
+    /**
+     * Sets (or updates) the Google Classroom link for a subject assignment.
+     * Only the faculty who OWNS the assignment may set it — prevents faculty
+     * from overwriting each other's links.
+     *
+     * @param assignmentId    the SubjectAssignment PK
+     * @param facultyCollegeId the college ID from the JWT principal
+     * @param link             the Google Classroom URL (nullable to clear it)
+     */
+    @Transactional
+    public SubjectAssignment setClassroomLink(Long assignmentId, String facultyCollegeId, String link) {
+        SubjectAssignment assignment = assignmentRepo.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found: " + assignmentId));
+
+        // Ownership check — compare the JWT collegeId against the assignment's faculty
+        if (assignment.getFaculty() == null ||
+                !assignment.getFaculty().getCollegeId().equals(facultyCollegeId)) {
+            throw new IllegalStateException(
+                    "Access denied: You can only configure classroom links for your own subject assignments.");
+        }
+
+        if (link != null && !link.trim().isEmpty()) {
+            String trimmedLink = link.trim();
+            if (!trimmedLink.startsWith("https://classroom.google.com/")) {
+                throw new IllegalArgumentException("Invalid Google Classroom URL. It must start with 'https://classroom.google.com/'");
+            }
+            assignment.setGoogleClassroomLink(trimmedLink);
+        } else {
+            assignment.setGoogleClassroomLink(null);
+        }
+
+        return assignmentRepo.save(assignment);
+    }
+
+    /**
+     * Returns all SubjectAssignments owned by the given faculty for a term.
+     * Used by the Faculty Gradebook "Connect Google Classroom" panel.
+     */
+    public List<SubjectAssignment> getAssignmentsForFaculty(String facultyCollegeId, String academicTerm) {
+        Faculty faculty = facultyRepo.findByCollegeId(facultyCollegeId)
+                .orElseThrow(() -> new RuntimeException("Faculty not found: " + facultyCollegeId));
+        return assignmentRepo.findByFacultyIdAndAcademicTerm(faculty.getId(), academicTerm);
     }
 
     // ─────────────────────────────────────────────────────────────────────

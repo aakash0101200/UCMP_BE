@@ -33,10 +33,12 @@ public class SectionController {
     public ResponseEntity<List<SectionDTO>> getAllSections() {
         List<SectionDTO> sections = sectionRepository.findAll().stream()
                 .map(s -> new SectionDTO(s.getId(), s.getSectionName(), s.getYear(),
-                        s.getBatch() != null ? s.getBatch().getId() : null))
+                        s.getBatch() != null ? s.getBatch().getId() : null,
+                        s.getBatch() != null ? s.getBatch().getBatchName() : null))
                 .toList();
         return ResponseEntity.ok(sections);
     }
+
 
     // ─── Quick-Connect: List students in a section (lightweight) ─────────────
     @GetMapping("/{id}/students")
@@ -91,8 +93,9 @@ public class SectionController {
         Section saved = sectionRepository.save(section);
 
         return ResponseEntity
-                .ok(new SectionDTO(saved.getId(), saved.getSectionName(), saved.getYear(), saved.getBatch().getId()));
+                .ok(new SectionDTO(saved.getId(), saved.getSectionName(), saved.getYear(), saved.getBatch().getId(), saved.getBatch().getBatchName()));
     }
+
 
     @lombok.Data
     public static class SectionCreationDTO {

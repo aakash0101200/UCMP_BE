@@ -16,10 +16,10 @@ import lombok.*;
 @Table(
     name = "subject_assignments",
     uniqueConstraints = {
-        // A faculty can only be assigned a subject to a section once per term
+        // A subject can only be assigned to a section once per term (one primary faculty member)
         @UniqueConstraint(
-            name = "uk_assignment_faculty_subject_section_term",
-            columnNames = {"faculty_id", "subject_id", "section_id", "academic_term"}
+            name = "uk_assignment_subject_section_term",
+            columnNames = {"subject_id", "section_id", "academic_term"}
         )
     }
 )
@@ -62,4 +62,12 @@ public class SubjectAssignment {
     @Min(1)
     @Column(nullable = false)
     private int weeklySlots;
+
+    /**
+     * Optional URL to the Google Classroom for this subject-section.
+     * Set by the owning faculty via PATCH /api/timetable/assignment/{id}/classroom-link.
+     * Null means the faculty has not configured it yet.
+     */
+    @Column(name = "google_classroom_link", length = 1024)
+    private String googleClassroomLink;
 }

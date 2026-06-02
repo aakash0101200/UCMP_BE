@@ -205,6 +205,7 @@ public class TimetableController {
                 .sectionName(a.getSection() != null ? a.getSection().getSectionName() : null)
                 .academicTerm(a.getAcademicTerm())
                 .weeklySlots(a.getWeeklySlots())
+                .googleClassroomLink(a.getGoogleClassroomLink())
                 .build();
     }
 
@@ -219,6 +220,46 @@ public class TimetableController {
         adminScopeValidator.enforceAccessToSection(authentication, assignment.getSection().getId());
         timetableService.deleteAssignment(id);
         return ResponseEntity.ok("Assignment deleted");
+    }
+
+    /**
+     * PATCH /api/timetable/assignment/{id}/classroom-link
+     * Faculty sets (or updates) the Google Classroom URL for their own assignment.
+     * Ownership is validated in the service — a faculty cannot change another's link.
+     */
+    @PatchMapping("/assignment/{id}/classroom-link")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<?> setClassroomLink(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String facultyCollegeId = authentication.getName();
+        String link = body.get("link");
+        try {
+            SubjectAssignment updated = timetableService.setClassroomLink(id, facultyCollegeId, link);
+            return ResponseEntity.ok(mapToAssignmentDTO(updated));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * GET /api/timetable/assignment/my?term=2026-27-ODD
+     * Faculty-only: returns their own subject assignments (with classroom links).
+     * Feeds the "Connect Google Classroom" panel in the Gradebook page.
+     */
+    @GetMapping("/assignment/my")
+    @PreAuthorize("hasAuthority('FACULTY')")
+    public ResponseEntity<List<SubjectAssignmentDTO>> getMyAssignments(
+            Authentication authentication,
+            @RequestParam String term) {
+        String facultyCollegeId = authentication.getName();
+        List<SubjectAssignmentDTO> dtos = timetableService.getAssignmentsForFaculty(facultyCollegeId, term).stream()
+                .map(this::mapToAssignmentDTO)
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     /**

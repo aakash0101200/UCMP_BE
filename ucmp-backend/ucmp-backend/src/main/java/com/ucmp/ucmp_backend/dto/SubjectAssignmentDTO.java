@@ -21,4 +21,5 @@ public class SubjectAssignmentDTO {
     private String sectionName;
     private String academicTerm;
     private int weeklySlots;
+    private String googleClassroomLink;
 }

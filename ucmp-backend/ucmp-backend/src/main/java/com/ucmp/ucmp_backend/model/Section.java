@@ -11,7 +11,15 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "sections")
+@Table(
+    name = "sections",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_section_name_batch_year",
+            columnNames = {"section_name", "batch_id", "year"}
+        )
+    }
+)
 public class Section {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

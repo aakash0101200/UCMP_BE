@@ -10,6 +10,7 @@ import com.ucmp.ucmp_backend.service.UserDeletionService;
 import com.ucmp.ucmp_backend.validator.AdminScopeValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +37,7 @@ public class AdminController {
     private final PasswordEncoder passwordEncoder;
     private final UserDeletionService userDeletionService;
     private final AdminScopeValidator adminScopeValidator;
+    private final JdbcTemplate jdbcTemplate;
 
     private String enforceAdminRoleAndDepartment(Authentication authentication) {
         String collegeId = authentication.getName();
@@ -495,5 +497,89 @@ public class AdminController {
         response.put("last", end >= students.size());
         response.put("totalElements", (long) students.size());
         return ResponseEntity.ok(response);
+    }
+
+    private void enforceSuperAdmin(Authentication authentication) {
+        String dept = enforceAdminRoleAndDepartment(authentication);
+        if (!"ALL".equals(dept)) {
+            throw new RuntimeException("Access Denied: Only Super Administrators can perform database cleanup operations.");
+        }
+    }
+
+    @PostMapping("/system/wipe-timetable")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Transactional
+    public ResponseEntity<String> wipeTimetable(Authentication authentication) {
+        enforceSuperAdmin(authentication);
+        
+        jdbcTemplate.update("DELETE FROM class_cancellations");
+        jdbcTemplate.update("DELETE FROM timetable_override_sections");
+        jdbcTemplate.update("DELETE FROM timetable_overrides");
+        jdbcTemplate.update("DELETE FROM timetable_entries");
+        jdbcTemplate.update("DELETE FROM subject_assignments");
+        
+        return ResponseEntity.ok("All timetable and assignment data wiped successfully.");
+    }
+
+    @PostMapping("/system/wipe-attendance")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Transactional
+    public ResponseEntity<String> wipeAttendance(Authentication authentication) {
+        enforceSuperAdmin(authentication);
+        
+        jdbcTemplate.update("DELETE FROM attendance_records");
+        jdbcTemplate.update("DELETE FROM attendance_session_sections");
+        jdbcTemplate.update("DELETE FROM attendance_sessions");
+        
+        return ResponseEntity.ok("All attendance records and sessions wiped successfully.");
+    }
+
+    @PostMapping("/system/wipe-alerts")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Transactional
+    public ResponseEntity<String> wipeAlerts(Authentication authentication) {
+        enforceSuperAdmin(authentication);
+        
+        jdbcTemplate.update("DELETE FROM announcements");
+        
+        return ResponseEntity.ok("All updates and announcements wiped successfully.");
+    }
+
+    @PostMapping("/system/wipe-directory")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Transactional
+    public ResponseEntity<String> wipeDirectory(Authentication authentication) {
+        enforceSuperAdmin(authentication);
+        
+        // 1. Wipe dependent transactional data to prevent foreign key constraint violations
+        jdbcTemplate.update("DELETE FROM attendance_records");
+        jdbcTemplate.update("DELETE FROM attendance_session_sections");
+        jdbcTemplate.update("DELETE FROM attendance_sessions");
+        jdbcTemplate.update("DELETE FROM class_cancellations");
+        jdbcTemplate.update("DELETE FROM timetable_override_sections");
+        jdbcTemplate.update("DELETE FROM timetable_overrides");
+        jdbcTemplate.update("DELETE FROM timetable_entries");
+        jdbcTemplate.update("DELETE FROM subject_assignments");
+        
+        // 2. Clear out other relational join tables
+        jdbcTemplate.update("DELETE FROM section_faculty");
+        
+        // 3. Clear students and faculties directories
+        jdbcTemplate.update("DELETE FROM students");
+        jdbcTemplate.update("DELETE FROM faculties");
+        
+        // 4. Wipe profiles for all non-admin users
+        jdbcTemplate.update("DELETE FROM profiles WHERE user_id NOT IN (" +
+                "SELECT ur.user_id FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'ADMIN')");
+        
+        // 5. Remove roles mapping for non-admin users
+        jdbcTemplate.update("DELETE FROM user_roles WHERE user_id NOT IN (" +
+                "SELECT ur.user_id FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'ADMIN')");
+        
+        // 6. Delete the actual non-admin users
+        jdbcTemplate.update("DELETE FROM users WHERE id NOT IN (" +
+                "SELECT ur.user_id FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'ADMIN')");
+        
+        return ResponseEntity.ok("All student, faculty, and non-admin user directory records wiped successfully.");
     }
 }
