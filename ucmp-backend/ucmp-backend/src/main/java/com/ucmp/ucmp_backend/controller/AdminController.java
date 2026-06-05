@@ -379,6 +379,7 @@ public class AdminController {
                 map.put("id", sec.getId());
                 map.put("sectionName", sec.getSectionName());
                 map.put("batchName", sec.getBatch().getBatchName());
+                map.put("year", sec.getYear());
                 response.add(map);
             }
         }

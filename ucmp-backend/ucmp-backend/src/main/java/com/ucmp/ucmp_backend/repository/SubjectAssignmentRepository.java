@@ -22,13 +22,12 @@ public interface SubjectAssignmentRepository extends JpaRepository<SubjectAssign
 
     // Check if a faculty is already assigned a subject to a section in a term
     boolean existsByFacultyIdAndSubjectIdAndSectionIdAndAcademicTerm(
-        Long facultyId, Long subjectId, Long sectionId, String academicTerm
-    );
+            Long facultyId, Long subjectId, Long sectionId, String academicTerm);
 
-    // Check if a subject is already assigned to any faculty for a specific section in a term
+    // Check if a subject is already assigned to any faculty for a specific section
+    // in a term
     boolean existsBySubjectIdAndSectionIdAndAcademicTerm(
-        Long subjectId, Long sectionId, String academicTerm
-    );
+            Long subjectId, Long sectionId, String academicTerm);
 
     List<SubjectAssignment> findBySubjectId(Long subjectId);
 }

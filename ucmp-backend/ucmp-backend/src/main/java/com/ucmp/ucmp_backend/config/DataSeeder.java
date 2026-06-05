@@ -69,6 +69,7 @@ public class DataSeeder implements CommandLineRunner {
             Section defaultSection = new Section();
             defaultSection.setSectionName("Section A");
             defaultSection.setBatch(defaultBatch);
+            defaultSection.setYear(3);
             sectionRepository.save(defaultSection);
             System.out.println("✅ Default Batch and Section generated successfully.");
         }
