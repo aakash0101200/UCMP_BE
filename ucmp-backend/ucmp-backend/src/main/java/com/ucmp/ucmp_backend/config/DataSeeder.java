@@ -59,13 +59,14 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // 3. Seed default Batch and Section
-        Batch defaultBatch = batchRepository.findById(1L).orElseGet(() -> {
+        Batch defaultBatch = batchRepository.findByBatchName("B.Tech CS 2026").orElseGet(() -> {
             Batch newBatch = new Batch();
             newBatch.setBatchName("B.Tech CS 2026");
             return batchRepository.save(newBatch);
         });
 
-        if (sectionRepository.findById(1L).isEmpty()) {
+        if (sectionRepository.findBySectionNameIgnoreCaseAndBatchIdAndYear("Section A", defaultBatch.getId(), 3)
+                .isEmpty()) {
             Section defaultSection = new Section();
             defaultSection.setSectionName("Section A");
             defaultSection.setBatch(defaultBatch);
@@ -77,15 +78,22 @@ public class DataSeeder implements CommandLineRunner {
         // 4. Seed sample Rooms (only if none exist)
         if (roomRepository.count() == 0) {
             List<Room> sampleRooms = List.of(
-                Room.builder().name("Room 101").building("Main Block").capacity(60).type(RoomType.LECTURE_HALL).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("Room 102").building("Main Block").capacity(60).type(RoomType.LECTURE_HALL).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("Room 201").building("Main Block").capacity(80).type(RoomType.LECTURE_HALL).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("Room 202").building("Main Block").capacity(80).type(RoomType.LECTURE_HALL).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("Seminar Hall A").building("Main Block").capacity(150).type(RoomType.SEMINAR_HALL).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("CS Lab 1").building("IT Block").capacity(40).type(RoomType.CS_LAB).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("CS Lab 2").building("IT Block").capacity(40).type(RoomType.CS_LAB).status(RoomStatus.AVAILABLE).build(),
-                Room.builder().name("Electronics Lab").building("Science Block").capacity(30).type(RoomType.ELECTRONICS_LAB).status(RoomStatus.AVAILABLE).build()
-            );
+                    Room.builder().name("Room 101").building("Main Block").capacity(60).type(RoomType.LECTURE_HALL)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("Room 102").building("Main Block").capacity(60).type(RoomType.LECTURE_HALL)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("Room 201").building("Main Block").capacity(80).type(RoomType.LECTURE_HALL)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("Room 202").building("Main Block").capacity(80).type(RoomType.LECTURE_HALL)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("Seminar Hall A").building("Main Block").capacity(150)
+                            .type(RoomType.SEMINAR_HALL).status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("CS Lab 1").building("IT Block").capacity(40).type(RoomType.CS_LAB)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("CS Lab 2").building("IT Block").capacity(40).type(RoomType.CS_LAB)
+                            .status(RoomStatus.AVAILABLE).build(),
+                    Room.builder().name("Electronics Lab").building("Science Block").capacity(30)
+                            .type(RoomType.ELECTRONICS_LAB).status(RoomStatus.AVAILABLE).build());
             roomRepository.saveAll(sampleRooms);
             System.out.println("✅ Sample Rooms seeded (" + sampleRooms.size() + " rooms).");
         }
@@ -93,15 +101,22 @@ public class DataSeeder implements CommandLineRunner {
         // 5. Seed sample Subjects (only if none exist)
         if (subjectRepository.count() == 0) {
             List<Subject> sampleSubjects = List.of(
-                Subject.builder().name("Data Structures").code("CS301").credits(4).weeklyHours(4).slotDuration(1).requiredRoomType(RoomType.ANY).department("Computer Science").build(),
-                Subject.builder().name("Algorithms").code("CS302").credits(4).weeklyHours(4).slotDuration(1).requiredRoomType(RoomType.ANY).department("Computer Science").build(),
-                Subject.builder().name("Operating Systems").code("CS303").credits(4).weeklyHours(4).slotDuration(1).requiredRoomType(RoomType.ANY).department("Computer Science").build(),
-                Subject.builder().name("Database Systems").code("CS304").credits(4).weeklyHours(4).slotDuration(1).requiredRoomType(RoomType.ANY).department("Computer Science").build(),
-                Subject.builder().name("Programming Lab").code("CS301L").credits(2).weeklyHours(2).slotDuration(2).requiredRoomType(RoomType.CS_LAB).department("Computer Science").build(),
-                Subject.builder().name("DBMS Lab").code("CS304L").credits(2).weeklyHours(2).slotDuration(2).requiredRoomType(RoomType.CS_LAB).department("Computer Science").build(),
-                Subject.builder().name("Mathematics I").code("MA101").credits(4).weeklyHours(4).slotDuration(1).requiredRoomType(RoomType.ANY).department("Mathematics").build(),
-                Subject.builder().name("Engineering Physics").code("PH101").credits(3).weeklyHours(3).slotDuration(1).requiredRoomType(RoomType.ANY).department("Physics").build()
-            );
+                    Subject.builder().name("Data Structures").code("CS301").credits(4).weeklyHours(4).slotDuration(1)
+                            .requiredRoomType(RoomType.ANY).department("Computer Science").build(),
+                    Subject.builder().name("Algorithms").code("CS302").credits(4).weeklyHours(4).slotDuration(1)
+                            .requiredRoomType(RoomType.ANY).department("Computer Science").build(),
+                    Subject.builder().name("Operating Systems").code("CS303").credits(4).weeklyHours(4).slotDuration(1)
+                            .requiredRoomType(RoomType.ANY).department("Computer Science").build(),
+                    Subject.builder().name("Database Systems").code("CS304").credits(4).weeklyHours(4).slotDuration(1)
+                            .requiredRoomType(RoomType.ANY).department("Computer Science").build(),
+                    Subject.builder().name("Programming Lab").code("CS301L").credits(2).weeklyHours(2).slotDuration(2)
+                            .requiredRoomType(RoomType.CS_LAB).department("Computer Science").build(),
+                    Subject.builder().name("DBMS Lab").code("CS304L").credits(2).weeklyHours(2).slotDuration(2)
+                            .requiredRoomType(RoomType.CS_LAB).department("Computer Science").build(),
+                    Subject.builder().name("Mathematics I").code("MA101").credits(4).weeklyHours(4).slotDuration(1)
+                            .requiredRoomType(RoomType.ANY).department("Mathematics").build(),
+                    Subject.builder().name("Engineering Physics").code("PH101").credits(3).weeklyHours(3)
+                            .slotDuration(1).requiredRoomType(RoomType.ANY).department("Physics").build());
             subjectRepository.saveAll(sampleSubjects);
             System.out.println("✅ Sample Subjects seeded (" + sampleSubjects.size() + " subjects).");
         }
