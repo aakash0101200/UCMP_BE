@@ -3,11 +3,15 @@ name: Deploy Spring Boot Backend to AWS Elastic Beanstalk
 on:
   push:
     branches:
-      - main # Change to master if your primary branch is named master
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ucmp-backend/ucmp-backend
 
     steps:
       - name: Checkout Code
@@ -32,4 +36,4 @@ jobs:
           environment_name: ucmp-backend-env
           version_label: "deploy-${{ github.sha }}"
           region: eu-north-1
-          deployment_package: target/ucmp-backend-0.0.1-SNAPSHOT.jar
+          deployment_package: ucmp-backend/ucmp-backend/target/ucmp-backend-0.0.1-SNAPSHOT.jar
