@@ -91,10 +91,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",
-                "https://ucmp.vercel.app",
-                "https://ucmp-khaki.vercel.app"));
+        config.setAllowedOriginPatterns(Collections.singletonList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
