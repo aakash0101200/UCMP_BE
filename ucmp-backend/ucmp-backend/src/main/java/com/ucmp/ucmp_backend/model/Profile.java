@@ -21,7 +21,7 @@ public class Profile {
     private Long id;
     private  String name;
 
-    @Column(name = "profile_picture_url")
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
     private String profilePictureUrl;
 
     @Column(name = "phone_number")

@@ -13,7 +13,6 @@ public class ProfileUpdateRequest {
     private String name; //editable user fields
 
     //Editable Profile fields
-    @Size(max = 500)
     private String profilePictureUrl;
 
     @Pattern(
