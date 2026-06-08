@@ -102,7 +102,7 @@ public class AttendanceController {
                             "subjectName",
                             session.getSubject() != null ? session.getSubject().getName() : "General Class",
                             "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A")))
-                    .orElse(ResponseEntity.notFound().build());
+                    .orElse(ResponseEntity.noContent().build());
         } else {
             return attendanceService.findActiveSessionForFaculty(collegeId)
                     .map(session -> ResponseEntity.ok(Map.of(
@@ -113,7 +113,7 @@ public class AttendanceController {
                             "subjectName",
                             session.getSubject() != null ? session.getSubject().getName() : "General Class",
                             "subjectCode", session.getSubject() != null ? session.getSubject().getCode() : "N/A")))
-                    .orElse(ResponseEntity.notFound().build());
+                    .orElse(ResponseEntity.noContent().build());
         }
     }
 
