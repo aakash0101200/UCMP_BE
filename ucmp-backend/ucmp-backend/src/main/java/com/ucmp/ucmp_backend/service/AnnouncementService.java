@@ -151,7 +151,7 @@ public class AnnouncementService {
             Student student = studentRepository.findByCollegeId(collegeId).orElse(null);
             final Long sectionId = (student != null && student.getSection() != null) ? student.getSection().getId()
                     : null;
-            final Integer year = (student != null && student.getYear() != null) ? Integer.parseInt(student.getYear())
+            final Integer year = (student != null && student.getYear() != null) ? safeParseYear(student.getYear())
                     : null;
             final String dept = (student != null && student.getBatch() != null) ? student.getBatch().getBatchName()
                     : null;
@@ -215,7 +215,7 @@ public class AnnouncementService {
 
     public List<Announcements> getAnnouncementsForStudent(Long sectionId, String collegeId) {
         Student student = studentRepository.findByCollegeId(collegeId).orElse(null);
-        final Integer year = (student != null && student.getYear() != null) ? Integer.parseInt(student.getYear())
+        final Integer year = (student != null && student.getYear() != null) ? safeParseYear(student.getYear())
                 : null;
         final String dept = (student != null && student.getBatch() != null) ? student.getBatch().getBatchName() : null;
 
@@ -241,5 +241,14 @@ public class AnnouncementService {
     public Announcements update(Long id, Announcements a) {
         a.setId(id);
         return repo.save(a);
+    }
+
+    private Integer safeParseYear(String yearStr) {
+        if (yearStr == null) return null;
+        try {
+            return Integer.parseInt(yearStr.replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
