@@ -244,7 +244,8 @@ public class AnnouncementService {
     }
 
     private Integer safeParseYear(String yearStr) {
-        if (yearStr == null) return null;
+        if (yearStr == null)
+            return null;
         try {
             return Integer.parseInt(yearStr.replaceAll("[^0-9]", ""));
         } catch (NumberFormatException e) {
