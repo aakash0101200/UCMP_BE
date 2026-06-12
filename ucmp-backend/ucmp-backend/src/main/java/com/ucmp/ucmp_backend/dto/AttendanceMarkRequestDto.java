@@ -8,4 +8,5 @@ public class AttendanceMarkRequestDto {
     private String code;
     private Double latitude;
     private Double longitude;
+    private String deviceFingerprint;
 }

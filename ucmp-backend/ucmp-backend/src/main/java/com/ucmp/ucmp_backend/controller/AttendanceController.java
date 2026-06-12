@@ -76,7 +76,8 @@ public class AttendanceController {
                     student.getId(),
                     request.getCode(),
                     request.getLatitude(),
-                    request.getLongitude());
+                    request.getLongitude(),
+                    request.getDeviceFingerprint());
             return ResponseEntity.ok("Attendance marked successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

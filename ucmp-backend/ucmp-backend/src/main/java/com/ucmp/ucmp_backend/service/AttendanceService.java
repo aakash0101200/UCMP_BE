@@ -286,7 +286,8 @@ public class AttendanceService {
     @Transactional
     public void markAttendance(Long sessionId, Long studentId,
             String submittedCode,
-            Double latitude, Double longitude) {
+            Double latitude, Double longitude,
+            String deviceFingerprint) {
         AttendanceSession session = sessionRepository.findByIdAndIsActiveTrue(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not active or not found"));
         Student student = studentRepository.findById(studentId)
@@ -294,6 +295,15 @@ public class AttendanceService {
 
         if (attendanceRecordRepository.existsByStudentIdAndAttendanceSessionId(studentId, sessionId)) {
             throw new RuntimeException("Attendance already marked for this session");
+        }
+
+        // Device Fingerprint validation (proxy check)
+        if (deviceFingerprint != null && !deviceFingerprint.trim().isEmpty()) {
+            boolean fingerprintExists = attendanceRecordRepository
+                    .existsByAttendanceSessionIdAndDeviceFingerprint(sessionId, deviceFingerprint);
+            if (fingerprintExists) {
+                throw new RuntimeException("Device Conflict: This device has already been used by another student to mark attendance for this lecture.");
+            }
         }
 
         // Location validation
@@ -334,6 +344,7 @@ public class AttendanceService {
                 .markedAt(LocalDateTime.now())
                 .markedLatitude(latitude)
                 .markedLongitude(longitude)
+                .deviceFingerprint(deviceFingerprint)
                 .markedBy(MarkSource.STUDENT_TOTP)
                 .build();
 

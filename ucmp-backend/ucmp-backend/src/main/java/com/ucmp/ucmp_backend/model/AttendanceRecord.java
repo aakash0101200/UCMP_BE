@@ -44,6 +44,10 @@ public class AttendanceRecord {
     private Double markedLatitude;
     private Double markedLongitude;
 
+    // ── DEVICE FINGERPRINT (proxy attendance prevention) ──────────────────────
+    @Column(name = "device_fingerprint", length = 255)
+    private String deviceFingerprint;
+
     // ── AUDIT: HOW was this record created? ────────────────────────────────────
     /**
      * STUDENT_TOTP   — Student self-marked with a valid rotating code (+ location if required).
