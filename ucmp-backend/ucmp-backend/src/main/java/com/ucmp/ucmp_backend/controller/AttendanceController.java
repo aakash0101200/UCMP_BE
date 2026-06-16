@@ -77,6 +77,7 @@ public class AttendanceController {
                     request.getCode(),
                     request.getLatitude(),
                     request.getLongitude(),
+                    request.getAccuracy(),
                     request.getDeviceFingerprint());
             return ResponseEntity.ok("Attendance marked successfully");
         } catch (RuntimeException e) {

@@ -134,7 +134,7 @@ public class AttendanceService {
                 .isActive(true)
                 .latitude(latitude)
                 .longitude(longitude)
-                .radiusInMeters(radiusInMeters != null ? radiusInMeters : 50.0)
+                .radiusInMeters(radiusInMeters != null ? radiusInMeters : 100.0)
                 .secretSeed(UUID.randomUUID().toString())
                 .startTime(LocalDateTime.now())
                 .durationInMinutes(sessionDuration)
@@ -323,6 +323,7 @@ public class AttendanceService {
     public void markAttendance(Long sessionId, Long studentId,
             String submittedCode,
             Double latitude, Double longitude,
+            Double accuracy,
             String deviceFingerprint) {
         AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not active or not found"));
@@ -356,17 +357,26 @@ public class AttendanceService {
             }
         }
 
-        // Location validation
+        // Location validation — smart radius that accounts for GPS accuracy
         if (session.getLatitude() != null && session.getLongitude() != null) {
             if (latitude == null || longitude == null) {
                 throw new RuntimeException("Location data is required for this session");
             }
             double distance = calculateHaversineDistance(
                     session.getLatitude(), session.getLongitude(), latitude, longitude);
-            if (distance > session.getRadiusInMeters()) {
+
+            // The effective radius is the larger of: the session's configured
+            // radius OR the student's reported GPS accuracy. This prevents
+            // false rejections when indoor GPS drift is high (e.g. 80m accuracy
+            // inside an auditorium with a 100m configured radius).
+            double studentAccuracy = (accuracy != null && accuracy > 0) ? accuracy : 0;
+            double effectiveRadius = Math.max(session.getRadiusInMeters(), studentAccuracy);
+
+            if (distance > effectiveRadius) {
                 throw new RuntimeException("You are too far from the classroom ("
-                        + Math.round(distance) + " meters away). Max allowed: "
-                        + session.getRadiusInMeters() + "m");
+                        + Math.round(distance) + "m away, GPS accuracy: ±"
+                        + Math.round(studentAccuracy) + "m). Max allowed: "
+                        + Math.round(session.getRadiusInMeters()) + "m");
             }
         }
 
