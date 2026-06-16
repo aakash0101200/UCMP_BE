@@ -116,6 +116,11 @@ public class AttendanceService {
                 .forEach(s -> {
                     s.endSession();
                     sessionRepository.save(s);
+                    try {
+                        announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(s.getId()));
+                    } catch (Exception e) {
+                        System.err.println("Failed to delete announcement for ended session: " + e.getMessage());
+                    }
                 });
 
         // Build and save the new session
@@ -188,6 +193,7 @@ public class AttendanceService {
                     attendanceAnnouncement.setTime(saved.getStartTime().toString());
                     attendanceAnnouncement.setType("ATTENDANCE_SESSION");
                     attendanceAnnouncement.setSectionId(targetSectionId);
+                    attendanceAnnouncement.setLocation(String.valueOf(saved.getId()));
                     attendanceAnnouncement.setCompleted(false);
 
                     announcementRepository.save(attendanceAnnouncement);
@@ -208,8 +214,22 @@ public class AttendanceService {
 
     // ── Get Current Code ───────────────────────────────────────────────────────
     public String getCurrentCodeForSession(Long sessionId) {
-        AttendanceSession session = sessionRepository.findByIdAndIsActiveTrue(sessionId)
+        AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not active or not found"));
+        if (!session.isActive()) {
+            throw new RuntimeException("Session not active or not found");
+        }
+        int duration = session.getDurationInMinutes() != null ? session.getDurationInMinutes() : 40;
+        if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
+            session.endSession();
+            sessionRepository.save(session);
+            try {
+                announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(sessionId));
+            } catch (Exception e) {
+                System.err.println("Failed to delete expired session announcements: " + e.getMessage());
+            }
+            throw new RuntimeException("Session not active or not found");
+        }
         return generateCodeForTime(session.getSecretSeed(), System.currentTimeMillis());
     }
 
@@ -220,6 +240,12 @@ public class AttendanceService {
                 .orElseThrow(() -> new RuntimeException("Session not found"));
         session.endSession(); // sets status=ENDED, isActive=false, endTime=now
         AttendanceSession saved = sessionRepository.save(session);
+
+        try {
+            announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(sessionId));
+        } catch (Exception e) {
+            System.err.println("Failed to delete attendance session announcement for ended session: " + e.getMessage());
+        }
 
         // Broadcast SessionEndedEvent to each section's websocket topic
         try {
@@ -252,6 +278,11 @@ public class AttendanceService {
             if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
                 session.endSession();
                 sessionRepository.save(session);
+                try {
+                    announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(session.getId()));
+                } catch (Exception e) {
+                    System.err.println("Failed to delete expired session announcements: " + e.getMessage());
+                }
                 return Optional.empty();
             }
             return Optional.of(session);
@@ -274,6 +305,11 @@ public class AttendanceService {
             if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
                 session.endSession();
                 sessionRepository.save(session);
+                try {
+                    announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(session.getId()));
+                } catch (Exception e) {
+                    System.err.println("Failed to delete expired session announcements: " + e.getMessage());
+                }
             } else {
                 validSession = session;
             }
@@ -288,8 +324,22 @@ public class AttendanceService {
             String submittedCode,
             Double latitude, Double longitude,
             String deviceFingerprint) {
-        AttendanceSession session = sessionRepository.findByIdAndIsActiveTrue(sessionId)
+        AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not active or not found"));
+        if (!session.isActive()) {
+            throw new RuntimeException("Session not active or not found");
+        }
+        int duration = session.getDurationInMinutes() != null ? session.getDurationInMinutes() : 40;
+        if (session.getStartTime().isBefore(LocalDateTime.now().minusMinutes(duration))) {
+            session.endSession();
+            sessionRepository.save(session);
+            try {
+                announcementRepository.deleteByTypeAndLocation("ATTENDANCE_SESSION", String.valueOf(sessionId));
+            } catch (Exception e) {
+                System.err.println("Failed to delete expired session announcements: " + e.getMessage());
+            }
+            throw new RuntimeException("Session not active or not found");
+        }
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 

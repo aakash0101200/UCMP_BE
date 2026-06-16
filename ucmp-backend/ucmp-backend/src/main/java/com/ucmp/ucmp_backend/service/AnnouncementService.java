@@ -7,6 +7,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 @Service
 public class AnnouncementService {
@@ -33,26 +36,49 @@ public class AnnouncementService {
         this.sectionRepository = sectionRepository;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void lazyPurgeStaleAnnouncements() {
+        try {
+            LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+            repo.deleteByCreatedAtBefore(cutoff);
+        } catch (Exception e) {
+            System.err.println("Failed to lazy purge stale announcements: " + e.getMessage());
+        }
+    }
+
     public List<Announcements> getAll() {
-        return repo.findAllByOrderByAnnouncementIdDesc();
+        lazyPurgeStaleAnnouncements();
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+        return repo.findAllByOrderByAnnouncementIdDesc().stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
+                .toList();
     }
 
     public List<Announcements> getAllForUser(Authentication authentication) {
+        lazyPurgeStaleAnnouncements();
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+
         if (authentication == null) {
-            return repo.findAllByOrderByAnnouncementIdDesc();
+            return repo.findAllByOrderByAnnouncementIdDesc().stream()
+                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
+                    .toList();
         }
 
         String collegeId = authentication.getName();
         User user = userRepository.findByCollegeId(collegeId).orElse(null);
         if (user == null) {
-            return repo.findAllByOrderByAnnouncementIdDesc();
+            return repo.findAllByOrderByAnnouncementIdDesc().stream()
+                    .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
+                    .toList();
         }
 
         boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
         boolean isFaculty = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("FACULTY"));
         boolean isStudent = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("STUDENT"));
 
-        List<Announcements> all = repo.findAllByOrderByAnnouncementIdDesc();
+        List<Announcements> all = repo.findAllByOrderByAnnouncementIdDesc().stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
+                .toList();
 
         if (isAdmin) {
             boolean isSuper = "ADMIN_001".equals(collegeId) || user.getDepartment() == null
@@ -210,16 +236,23 @@ public class AnnouncementService {
     }
 
     public List<Announcements> getAnnouncementsForStudent(Long sectionId) {
-        return repo.findBySectionIdIsNullOrSectionIdOrderByAnnouncementIdDesc(sectionId);
+        lazyPurgeStaleAnnouncements();
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
+        return repo.findBySectionIdIsNullOrSectionIdOrderByAnnouncementIdDesc(sectionId).stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
+                .toList();
     }
 
     public List<Announcements> getAnnouncementsForStudent(Long sectionId, String collegeId) {
+        lazyPurgeStaleAnnouncements();
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
         Student student = studentRepository.findByCollegeId(collegeId).orElse(null);
         final Integer year = (student != null && student.getYear() != null) ? safeParseYear(student.getYear())
                 : null;
         final String dept = (student != null && student.getBatch() != null) ? student.getBatch().getBatchName() : null;
 
         return repo.findRelevantAnnouncements(sectionId, collegeId).stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(cutoff))
                 .filter(a -> {
                     if (a.getSectionId() == null && a.getStudentCollegeId() == null) {
                         if (a.getTargetRole() != null && !a.getTargetRole().equalsIgnoreCase("STUDENT"))

@@ -32,4 +32,8 @@ public interface AnnouncementRepository extends JpaRepository<Announcements, Lon
         @Modifying
         @Query("DELETE FROM Announcements a WHERE a.createdAt < :cutoff")
         int deleteByCreatedAtBefore(@Param("cutoff") LocalDateTime cutoff);
+
+        @Modifying
+        @Query("DELETE FROM Announcements a WHERE a.type = :type AND a.location = :location")
+        int deleteByTypeAndLocation(@Param("type") String type, @Param("location") String location);
 }
