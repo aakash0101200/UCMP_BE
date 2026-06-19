@@ -17,4 +17,5 @@ public class LoginRequest {
     private String collegeId;
     private String password;
     private Role role;
+    private String deviceId;
 }

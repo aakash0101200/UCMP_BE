@@ -18,8 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
-
-
+import org.springframework.security.core.Authentication;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -104,5 +103,14 @@ public class AuthController {
                     .badRequest()
                     .body(Map.of("message", exception.getMessage()));
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            authService.logout(authentication.getName());
+            return ResponseEntity.ok(Map.of("message", "Logged out and device binding cleared"));
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
     }
 }

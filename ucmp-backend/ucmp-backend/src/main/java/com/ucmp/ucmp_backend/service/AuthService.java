@@ -301,6 +301,16 @@ public class AuthService {
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet());
 
+        if (roleNames.contains("STUDENT") && request.getDeviceId() != null && !request.getDeviceId().trim().isEmpty()) {
+            Student student = studentRepository.findByUser(user)
+                    .orElseThrow(() -> new RuntimeException("Student record not found"));
+            if (student.getDeviceId() != null && !student.getDeviceId().equals(request.getDeviceId())) {
+                throw new RuntimeException("Device conflict: This account is already bound to another active device session. Please log out from that device first.");
+            }
+            student.setDeviceId(request.getDeviceId());
+            studentRepository.save(student);
+        }
+
         String token = jwtUtil.generateToken(user.getCollegeId(), roleNames);
 
         Profile profile = profileRepository.findByUser_CollegeId(user.getCollegeId())
@@ -326,5 +336,15 @@ public class AuthService {
                 .token(token)
                 .profile(profileResponse)
                 .build();
+    }
+
+    @Transactional
+    public void logout(String collegeId) {
+        userRepository.findByCollegeId(collegeId).ifPresent(user -> {
+            studentRepository.findByUser(user).ifPresent(student -> {
+                student.setDeviceId(null);
+                studentRepository.save(student);
+            });
+        });
     }
 }

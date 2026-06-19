@@ -48,5 +48,6 @@ public class Student {
 
     private String year; //consider making year an enum or separate table if needed
 
-
+    @Column(name = "device_id")
+    private String deviceId;
 }

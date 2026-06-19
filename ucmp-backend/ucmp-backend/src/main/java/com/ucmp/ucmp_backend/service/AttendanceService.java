@@ -348,6 +348,13 @@ public class AttendanceService {
             throw new RuntimeException("Attendance already marked for this session");
         }
 
+        // Device Binding Validation
+        if (student.getDeviceId() != null) {
+            if (deviceFingerprint == null || !deviceFingerprint.trim().equals(student.getDeviceId())) {
+                throw new RuntimeException("Device Binding Error: This request did not originate from the registered device for this student account.");
+            }
+        }
+
         // Device Fingerprint validation (proxy check)
         if (deviceFingerprint != null && !deviceFingerprint.trim().isEmpty()) {
             boolean fingerprintExists = attendanceRecordRepository
