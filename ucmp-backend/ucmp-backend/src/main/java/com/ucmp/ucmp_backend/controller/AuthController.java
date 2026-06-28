@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "https://ucmp-p4c1.vercel.app", allowCredentials = "true")
 public class AuthController {
 
     private final AuthService authService;

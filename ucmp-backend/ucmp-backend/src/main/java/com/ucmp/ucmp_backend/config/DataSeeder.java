@@ -28,11 +28,25 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
 
-        // 1. Ensure the ADMIN role exists in the database
+        // 1. Ensure all standard roles exist in the database
         Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                 .orElseGet(() -> {
                     Role newRole = new Role();
                     newRole.setName(RoleName.ADMIN);
+                    return roleRepository.save(newRole);
+                });
+
+        roleRepository.findByName(RoleName.STUDENT)
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(RoleName.STUDENT);
+                    return roleRepository.save(newRole);
+                });
+
+        roleRepository.findByName(RoleName.FACULTY)
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(RoleName.FACULTY);
                     return roleRepository.save(newRole);
                 });
 
