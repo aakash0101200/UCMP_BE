@@ -35,5 +35,5 @@ jobs:
           application_name: ucmp-backend
           environment_name: ucmp-backend-env
           version_label: "deploy-${{ github.sha }}"
-          region: eu-north-1
+          region: ap-south-1
           deployment_package: ucmp-backend/ucmp-backend/target/ucmp-backend-0.0.1-SNAPSHOT.jar
