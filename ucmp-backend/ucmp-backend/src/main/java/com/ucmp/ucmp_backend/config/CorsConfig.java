@@ -16,7 +16,8 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins("http://localhost:5173",
                                         "https://ucmp-khaki.vercel.app",
-                                        "https://ucmp-p4c1.vercel.app"
+                                        "https://ucmp-p4c1.vercel.app",
+                                        "https://ucmp.vercel.app"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*") // You had this commented out – keep it!

@@ -94,7 +94,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "https://ucmp-khaki.vercel.app",
-                "https://ucmp-p4c1.vercel.app"
+                "https://ucmp-p4c1.vercel.app",
+                "https://ucmp.vercel.app"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
