@@ -33,7 +33,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: ucmp-backend
-          environment_name: ucmp-backend-env
+          environment_name: Ucmp-backend-env
           version_label: "deploy-${{ github.sha }}"
           region: ap-south-1
           deployment_package: ucmp-backend/ucmp-backend/target/ucmp-backend-0.0.1-SNAPSHOT.jar
